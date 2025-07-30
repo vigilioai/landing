@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vigilio.ai – Intelligence Accumulator</title>
+
+<!-- Web Font -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<style>
+/* ───────────  Base Settings  ─────────── */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #4fd1c7;
+  --secondary: #1e2832;
+  --accent: #4fd1c7;
+  --navy: #2d3a4a;
+  --navy2: #288;
+  --gray: #64748b;
+  --light-gray: #f8fafc;
+  --dark: #1e2832;
+  --success: #4fd1c7;
+  --collect-color: #2563eb;
+  --knowledge-color: #4fd1c7;
+  --intelligence-color: #8b5cf6;
+  --gradient-dark: linear-gradient(135deg, #2d3a4a 0%, #1e2832 100%);
+}
+body {
+  font-family: 'DM Sans', sans-serif;
+  color: var(--dark);
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ───────────  Navigation Bar  ─────────── */
+.navbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 80px;
+  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 5vw; border-bottom: 1px solid #e2e8f0; z-index: 1000;
+}
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; color: var(--dark);
+  font-weight: 700; font-size: 24px;
+}
+
+/* ───────────  Logo Hexagon  ─────────── */
+.logo-hexagon {
+  width: 36px; height: 36px;
+  position: relative;
+  display: inline-block;
+}
+.hexagon {
+  width: 100%; height: 100%;
+  background: var(--gradient-dark);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.hexagon::before {
+  content: '';
+  position: absolute;
+  width: 80%; height: 80%;
+  background: var(--navy);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: 1;
+}
+.hexagon-diamond {
+  width: 14px; height: 14px;
+  background: var(--primary);
+  transform: rotate(45deg);
+  position: relative;
+  z-index: 2;
+}
+
+/* ───────────  Hero Section  ─────────── */
+.hero {
+  position: relative; min-height: 100vh;
+  padding: 140px 5vw 80px; display: flex;
+  align-items: center; gap: 80px;
+  max-width: 1400px; margin: 0 auto; overflow: hidden;
+}
+.hero-content { flex: 1; max-width: 600px; z-index: 10; }
+.hero-title {
+  font-size: 48px; font-weight: 700; margin-bottom: 16px;
+}
+.hero-tagline {
+  font-size: 24px; font-weight: 500; color: var(--gray);
+  margin-bottom: 32px;
+}
+.hero-description {
+  font-size: 20px; color: var(--gray);
+  margin-bottom: 48px;
+}
+.cta-container { display: flex; gap: 16px; margin-bottom: 80px; }
+.cta-btn {
+  display: inline-flex; align-items: center;
+  padding: 16px 32px; border-radius: 6px;
+  font-size: 16px; font-weight: 600; text-decoration: none;
+  border: 2px solid transparent; transition: all .3s ease;
+  cursor: pointer;
+}
+.cta-primary {
+  background: var(--accent); color: #fff;
+  box-shadow: 0 4px 20px rgba(79, 209, 199, 0.3);
+}
+.cta-primary:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(79, 209, 199, 0.4);
+  background: #45b8af;
+}
+.cta-secondary {
+  color: var(--navy); border-color: var(--navy);
+  background: rgba(255, 255, 255, 0.8);
+}
+.cta-secondary:hover {
+  background: var(--navy); color: #fff;
+  transform: translateY(-2px);
+}
+
+/* ───────────  Animation Canvas  ─────────── */
+.canvas {
+  position: absolute; top: 0; right: 0; bottom: 0; left: 50%;
+  pointer-events: none; z-index: 1;
+}
+.agent, .info {
+  position: absolute; border-radius: 50%;
+}
+.agent {
+  width: 32px; height: 32px; cursor: pointer;
+  pointer-events: auto; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .4s ease;
+  background: var(--collect-color);
+  border: 2px solid rgba(255,255,255,.8);
+  box-shadow: 0 2px 8px rgba(0,0,0,.1);
+}
+/* Stage Color Shifts */
+.agent[data-stage="collect"] {
+  background: var(--collect-color);
+}
+.agent[data-stage="knowledge"] {
+  background: var(--knowledge-color);
+  box-shadow: 0 0 15px rgba(79,209,199,.6);
+}
+.agent[data-stage="intelligence"] {
+  background: var(--intelligence-color);
+  box-shadow: 0 0 20px rgba(139,92,246,.8);
+}
+/* Cap for Intelligence Stage */
+.agent .cap {
+  position: absolute; top: -15px; left: 3px;
+  width: 24px; height: 15px;
+  background: linear-gradient(45deg,#000,#333);
+  border-radius: 50% 50% 0 0;
+  opacity: 0; transform: scale(0);
+  transition: all .3s ease;
+}
+.agent[data-stage="intelligence"] .cap {
+  opacity: 1; transform: scale(1);
+}
+/* Intelligence Aura */
+.intelligence-aura {
+  position: absolute; width: 60px; height: 60px;
+  top: -14px; left: -14px;
+  border: 2px solid var(--intelligence-color);
+  border-radius: 50%; opacity: 0;
+  animation: auraRotate 4s linear infinite;
+}
+.agent[data-stage="intelligence"] .intelligence-aura {
+  opacity: .4;
+}
+/* Dot inside Agent */
+.agent::after {
+  content: ''; width: 10px; height: 10px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
+/* Information Nodes */
+.info {
+  width: 8px; height: 8px;
+  background: #bdbdbd;
+  opacity: .5;
+  transition: all .3s;
+}
+.info.valid {
+  background: var(--accent); opacity: .8;
+}
+.info.consumed {
+  opacity: 0; transform: scale(0);
+}
+
+/* Interaction Flashes */
+@keyframes flash {
+  0% { box-shadow: 0 0 0 0 rgba(37,99,235,.8); }
+  50% { box-shadow: 0 0 0 25px rgba(37,99,235,0); }
+  100% { box-shadow: inherit; }
+}
+.flash { animation: flash .8s ease; }
+
+@keyframes knowledgeFlash {
+  0% { box-shadow: 0 0 0 0 rgba(79,209,199,.8); }
+  50% { box-shadow: 0 0 0 25px rgba(79,209,199,0); }
+  100% { box-shadow: 0 0 15px rgba(79,209,199,.6); }
+}
+.knowledge-flash { animation: knowledgeFlash .8s ease; }
+
+@keyframes intelligenceFlash {
+  0% { box-shadow: 0 0 0 0 rgba(139,92,246,.9); }
+  50% { box-shadow: 0 0 0 30px rgba(139,92,246,0); }
+  100% { box-shadow: 0 0 20px rgba(139,92,246,.8); }
+}
+.intelligence-flash { animation: intelligenceFlash .6s ease; }
+
+/* Connection Lines */
+.connection {
+  position: absolute; height: 3px;
+  background: linear-gradient(90deg,transparent,var(--knowledge-color),transparent);
+  opacity: 0; transform-origin: left center;
+  border-radius: 2px;
+  transition: opacity .5s ease;
+}
+.connection.active { opacity: .7; }
+
+/* Knowledge Agent Connections */
+.knowledge-connection {
+  position: absolute; height: 2px;
+  background: linear-gradient(90deg,transparent,var(--intelligence-color),transparent);
+  opacity: 0; transform-origin: left center;
+  border-radius: 1px;
+  transition: opacity .3s ease;
+}
+.knowledge-connection.active { 
+  opacity: .5;
+  animation: knowledgePulse 2s ease-in-out infinite alternate;
+}
+
+/* Aura Rotation Animation */
+@keyframes auraRotate {
+  0% { transform: rotate(0deg) scale(.8); }
+  50% { transform: rotate(180deg) scale(1.1); }
+  100% { transform: rotate(360deg) scale(.8); }
+}
+
+@keyframes knowledgePulse {
+  0% { opacity: .5; }
+  100% { opacity: .3; }
+}
+
+/* Dark Section - Updated with Navy2 */
+.section-dark {
+  background: var(--navy2); color: #fff;
+  padding: 80px 5vw;
+  position: relative;
+  z-index: 10;
+}
+
+/* Process Grid - Circle Visibility */
+.process-grid {
+  display: grid; 
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+  gap: 32px; 
+  margin-top: 40px;
+  position: relative;
+  z-index: 20;
+}
+
+.process-item {
+  display: flex; 
+  align-items: flex-start; 
+  gap: 16px;
+  position: relative;
+  z-index: 30;
+}
+
+.process-circle {
+  width: 40px; 
+  height: 40px; 
+  border-radius: 50%; 
+  flex-shrink: 0; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  color: #fff; 
+  font-weight: 700;
+  position: relative;
+  z-index: 40;
+}
+
+/* ───────────  New Content Sections  ─────────── */
+.hero-outro {
+  background: var(--light-gray);
+  padding: 80px 5vw;
+  text-align: center;
+}
+.hero-outro h2 {
+  font-size: 36px; font-weight: 700; 
+  margin-bottom: 32px; color: var(--dark);
+}
+.hero-outro .highlight-text {
+  font-size: 22px; line-height: 1.7;
+  color: var(--gray); max-width: 900px;
+  margin: 0 auto 48px;
+}
+.hero-outro .highlight-text .dash {
+  color: var(--accent); font-weight: 600;
+}
+.hero-outro .tagline {
+  font-size: 28px; font-weight: 600;
+  color: var(--navy); margin-bottom: 16px;
+}
+.hero-outro .subtitle {
+  font-size: 20px; color: var(--gray);
+}
+
+.features-section {
+  padding: 100px 5vw;
+  background: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.features-container {
+  max-width: 1200px; margin: 0 auto;
+  position: relative;
+  z-index: 10;
+}
+.features-header {
+  text-align: center; margin-bottom: 80px;
+}
+.features-header h2 {
+  font-size: 42px; font-weight: 700;
+  color: var(--dark); margin-bottom: 24px;
+}
+.features-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 60px; align-items: stretch;
+}
+.feature-card {
+  text-align: left; padding: 32px;
+  border-radius: 16px; border: 2px solid transparent;
+  transition: all .3s ease;
+  background: rgba(248, 250, 252, 0.5);
+  position: relative;
+  z-index: 20;
+}
+.feature-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(79, 209, 199, 0.1);
+  background: #fff;
+}
+.feature-card h3 {
+  font-size: 24px; font-weight: 700;
+  color: var(--dark); margin-bottom: 16px;
+}
+.feature-card p {
+  font-size: 18px; line-height: 1.7;
+  color: var(--gray);
+}
+
+/* Knowledge Canvas for Features Section */
+.knowledge-canvas {
+  position: absolute; 
+  top: 0; right: 0; bottom: 0; left: 0;
+  pointer-events: none; 
+  z-index: 1;
+  opacity: 0.6;
+  /* Prevent layout shifts */
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.knowledge-agent {
+  position: absolute; border-radius: 50%;
+  width: 24px; height: 24px; cursor: pointer;
+  pointer-events: none; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .5s ease;
+  background: var(--intelligence-color);
+  border: 2px solid rgba(255,255,255,.9);
+  box-shadow: 0 0 12px rgba(139,92,246,.4);
+  /* Prevent any layout influence */
+  will-change: transform;
+}
+
+.knowledge-agent::after {
+  content: ''; width: 8px; height: 8px;
+  background: #fff; border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+
+.vision-section {
+  background: var(--navy);
+  padding: 100px 5vw; color: #fff; text-align: center;
+}
+.vision-section h2 {
+  font-size: 38px; font-weight: 700; margin-bottom: 32px;
+}
+.vision-content {
+  max-width: 800px; margin: 0 auto;
+  font-size: 20px; line-height: 1.8;
+}
+.vision-highlight {
+  color: var(--accent); font-weight: 600;
+}
+
+.footer {
+  text-align: center; padding: 48px 5vw;
+  border-top: 1px solid #e2e8f0;
+  background: var(--light-gray);
+}
+
+/* Responsive */
+@media(max-width:768px) {
+  .hero {
+    flex-direction: column; padding: 120px 24px 60px;
+  }
+  .canvas {
+    left: 0; right: 0; top: 60%;
+  }
+  .hero-title { font-size: 36px; }
+  .hero-tagline { font-size: 20px; }
+  .hero-description { font-size: 18px; }
+  .cta-container { flex-direction: column; align-items: flex-start; }
+  .hero-outro h2 { font-size: 28px; }
+  .hero-outro .highlight-text { font-size: 18px; }
+  .features-header h2 { font-size: 32px; }
+  .features-grid { grid-template-columns: 1fr; gap: 40px; }
+  .vision-section h2 { font-size: 28px; }
+  .vision-content { font-size: 18px; }
+}
+
+/* ───────────  Dialog Styles  ─────────── */
+.dialog-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  visibility: hidden; opacity: 0; transition: all .3s ease;
+  z-index: 2000;
+}
+.dialog-overlay.active {
+  visibility: visible; opacity: 1;
+}
+.dialog {
+  background: #fff; color: var(--dark);
+  padding: 32px 40px 40px; border-radius: 12px; 
+  width: 90%; max-width: 450px;
+  position: relative; 
+  transform: translateY(-30px); 
+  transition: transform .3s ease;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.dialog-overlay.active .dialog {
+  transform: translateY(0);
+}
+.dialog h3 { 
+  font-size: 24px; margin-bottom: 16px; 
+  color: var(--dark); font-weight: 700;
+}
+.dialog p {
+  color: var(--gray); margin-bottom: 24px;
+  line-height: 1.6;
+}
+.dialog label { 
+  display: block; margin-bottom: 8px; 
+  font-weight: 600; color: var(--dark);
+}
+.dialog input[type="email"] {
+  width: 100%; padding: 14px 16px; 
+  border: 2px solid #e2e8f0;
+  border-radius: 8px; font-size: 16px; 
+  margin-bottom: 24px;
+  transition: border-color .2s;
+  font-family: inherit;
+}
+.dialog input[type="email"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.dialog .dialog-btn {
+  width: 100%; background: var(--accent); color: #fff;
+  border: none; padding: 14px 0; font-size: 16px; font-weight: 600;
+  border-radius: 8px; cursor: pointer; 
+  transition: all .2s;
+  font-family: inherit;
+}
+.dialog .dialog-btn:hover { 
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(79, 209, 199, 0.3);
+  background: #45b8af;
+}
+.dialog .dialog-btn:disabled {
+  background: #cbd5e1; cursor: not-allowed;
+  transform: none; box-shadow: none;
+}
+.dialog .close-btn {
+  position: absolute; top: 16px; right: 20px; 
+  cursor: pointer; font-size: 24px; line-height: 1;
+  color: var(--gray); width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%; transition: all .2s;
+}
+.dialog .close-btn:hover {
+  background: #f1f5f9; color: var(--dark);
+}
+.dialog .success-message {
+  color: var(--success); font-weight: 600;
+  text-align: center; margin-top: 16px;
+}
+.dialog .error-message {
+  color: #ef4444; font-weight: 600;
+  text-align: center; margin-top: 16px;
+}
+
+/* Circle formation animations */
+@keyframes linkGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(79,209,199,0.8); }
+  50%  { box-shadow: 0 0 8px 8px rgba(79,209,199,0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(79,209,199,0); }
+}
+
+@keyframes circlePulse {
+  0%   { box-shadow: 0 0 0 0 rgba(139,92,246,0.8); }
+  50%  { box-shadow: 0 0 16px 16px rgba(139,92,246,0.6); }
+  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); }
+}
+
+.knowledge-agent.circle-glow {
+  animation: circlePulse 1s ease-in-out infinite alternate;
+}
+
+/* Circle connection lines */
+.circle-connection {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--intelligence-color), transparent);
+  opacity: 0;
+  transform-origin: left center;
+  border-radius: 1px;
+  transition: opacity .3s ease;
+  pointer-events: none;
+}
+
+.circle-connection.active {
+  opacity: 0.8;
+  animation: linkGlow 0.8s ease-out forwards;
+}
+</style>
+</head>
+<body>
+<!-- Navigation -->
+<nav class="navbar">
+  <a href="#" class="nav-brand">
+    <div class="logo-hexagon">
+      <div class="hexagon">
+        <div class="hexagon-diamond"></div>
+      </div>
+    </div>
+    <span>vigilio.ai</span>
+  </a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">Your Goal. Your AI Flow. Your Future.</h1>
+    <p class="hero-tagline">Vigilantly amplify intelligence through transformers</p>
+    <p class="hero-description">
+      Transforming information chaos into crystal-clear insight—for everyone. Picture an invisible team of hyper-focused AI agents fanning out across the world's data streams: markets, science, culture, code, geopolitics.
+    </p>
+    <div class="cta-container">
+      <a href="#" class="cta-btn cta-primary" id="requestDemoBtn">Request&nbsp;Demo</a>
+      <a href="#" class="cta-btn cta-secondary" id="learnMoreBtn">Learn&nbsp;More</a>
+    </div>
+  </div>
+  <div class="canvas" id="canvas"></div>
+</section>
+
+<!-- Process Section -->
+<section class="section-dark" id="processSection">
+  <h2 style="font-size:32px;font-weight:700;margin-bottom:24px">Intelligence Accumulation Flow</h2>
+  <div class="process-grid">
+    <div class="process-item">
+      <div class="process-circle" style="background:var(--collect-color)">1</div>
+      <div><strong>Data Collection</strong><br>Agents gather stock-market information from sources while eliminating hallucinations.</div>
+    </div>
+    <div class="process-item">
+      <div class="process-circle" style="background:var(--knowledge-color)">2</div>
+      <div><strong>Knowledge Integration</strong><br>Using proprietary techniques to form a trustworthy knowledge model.</div>
+    </div>
+    <div class="process-item">
+      <div class="process-circle" style="background:var(--intelligence-color)">3</div>
+      <div><strong>Intelligence Maturation</strong><br>After market validation, agents evolve into mature intelligent entities.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Hero Outro -->
+<section class="hero-outro">
+  <h2>The Intelligence Revolution</h2>
+  <div class="highlight-text">
+    Every second they <span class="dash">watch</span>, <span class="dash">compare</span>, <span class="dash">discard the noise</span>, and <span class="dash">elevate what matters</span>.<br>
+    The result? A live, ever-evolving Intelligence Flow you can actually act on.
+  </div>
+  <div class="tagline">Why it's radically different</div>
+  <div class="subtitle">Intelligence that learns, adapts, and anticipates</div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+  <div class="features-container">
+    <div class="features-header">
+      <h2>Powered by Next-Generation AI</h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>Unified Signal Engine</h3>
+        <p>Not "another dashboard." Our agents fuse deep-domain large-language models with real-time sensors so the right fact reaches you the moment it's born.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Context-aware Summaries</h3>
+        <p>Like a personal analyst who already knows your projects, preferences and risk tolerance—then explains the headline in your language.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Continuous Learning Loop</h3>
+        <p>Each interaction sharpens the system. The more you use it, the smarter it curates, predictively answering questions you haven't asked yet.</p>
+      </div>
+      <div class="feature-card" style="position: relative; overflow: hidden; min-height: 200px;">
+        <h3>Intelligence Networks</h3>
+        <p>Watch AI agents form dynamic knowledge circles, sharing insights through interconnected neural pathways.</p>
+        <div class="knowledge-canvas" id="knowledgeCanvas"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Vision Section -->
+<section class="vision-section">
+  <h2>From Stock Ticks to Material Breakthroughs</h2>
+  <div class="vision-content">
+    <span class="vision-highlight">Finance is just the demo tape.</span> Today it flags an earnings anomaly; tomorrow it could warn of a supply-chain hiccup or surface a breakthrough alloy formula. <br/> <span class="vision-highlight">Because opportunity doesn't wear one badge.</span>
+  </div>
+</section>
+
+<footer class="footer">&copy; Vigilio.ai 2025. All rights reserved.</footer>
+
+<!-- ───────────  Request-Demo Dialog  ─────────── -->
+<div class="dialog-overlay" id="dialogOverlay">
+  <div class="dialog" role="dialog" aria-labelledby="dialogTitle" aria-modal="true">
+    <span class="close-btn" id="dialogClose" aria-label="Close">×</span>
+    <h3 id="dialogTitle">Request a Demo</h3>
+    <p>Please enter your corporate email address, and we'll reach out to you once the demo is available. Stay tuned.</p>
+    <label for="demoEmail">Email:</label>
+    <input type="email" id="demoEmail" placeholder="name@company.com" required />
+    <button class="dialog-btn" id="dialogRequest">Request</button>
+    <div id="dialogMessage"></div>
+  </div>
+</div>
+
+<script>
+/* Global Canvas Settings */
+const canvas = document.getElementById('canvas');
+const AGENT_COUNT = 6, INFO_COUNT = 30;
+const VALID_RATIO = 0.65, NEED_INFO = 3;
+const VALIDATION_DELAY = 4000;
+
+/* Utility Functions */
+const rand = (min,max)=>Math.random()*(max-min)+min;
+const create = (cls,parent=canvas)=>{
+  const e=document.createElement('div');
+  e.className=cls; parent.appendChild(e);
+  return e;
+};
+const randomPos=()=>({x:rand(5,90),y:rand(10,85)});
+const smoothMoveTo=(el,pos,dur=3000)=>{
+  el.style.transition = `left ${dur}ms ease-in-out, top ${dur}ms ease-in-out`;
+  el.style.left=pos.x+'%'; el.style.top=pos.y+'%';
+};
+
+/* Build Information Nodes */
+const infos=[];
+for(let i=0;i<INFO_COUNT;i++){
+  const node=create('info');
+  const pos=randomPos();
+  node.style.left=pos.x+'%';
+  node.style.top=pos.y+'%';
+  const valid=i<INFO_COUNT*VALID_RATIO;
+  if(valid) node.classList.add('valid');
+  infos.push({el:node,valid,consumed:false,pos});
+}
+
+/* Agent Class */
+class Agent {
+  constructor(){
+    this.el=create('agent');
+    this.pos=randomPos();
+    this.el.style.left=this.pos.x+'%';
+    this.el.style.top=this.pos.y+'%';
+    this.infoHeld=0;
+    this.stage='collect';
+    this.el.setAttribute('data-stage',this.stage);
+    this.cap=document.createElement('div');
+    this.cap.className='cap';
+    this.el.appendChild(this.cap);
+    this.aura=document.createElement('div');
+    this.aura.className='intelligence-aura';
+    this.el.appendChild(this.aura);
+    this.el.addEventListener('click',()=>this.manualBoost());
+    this.startWandering();
+    this.startCollecting();
+  }
+  startWandering(){
+    const wander=()=>{
+      if(this.stage==='intelligence') return;
+      const pos=randomPos();
+      smoothMoveTo(this.el,pos,rand(4000,7000));
+      setTimeout(wander,rand(5000,8000));
+    };
+    wander();
+  }
+  startCollecting(){
+    const loop=()=>{
+      if(this.stage==='collect') this.tryCollect();
+      setTimeout(loop,1500);
+    };
+    loop();
+  }
+  tryCollect(){
+    infos.forEach(info=>{
+      if(info.consumed) return;
+      const d=this.dist(this.el,info.el);
+      if(d<80){
+        info.consumed=true;
+        if(info.valid){
+          info.el.classList.add('consumed');
+          this.flash('flash');
+          this.animateParticle(info.el);
+          this.infoHeld++;
+          if(this.infoHeld>=NEED_INFO) setTimeout(()=>this.upgrade(),800);
+        } else {
+          info.el.style.background='#ef4444';
+          info.el.animate([
+            {transform:'scale(1)',opacity:1},
+            {transform:'scale(1.5)',opacity:.5},
+            {transform:'scale(0)',opacity:0}
+          ],{duration:600,easing:'ease-out'});
+          setTimeout(()=>info.el.remove(),600);
+        }
+      }
+    });
+  }
+  upgrade(){
+    this.stage='knowledge';
+    this.el.setAttribute('data-stage',this.stage);
+    this.flash('knowledge-flash');
+    setTimeout(()=>{
+      const peers=agents.filter(a=>a!==this&&a.stage==='knowledge');
+      if(peers.length){
+        const p=peers[Math.floor(Math.random()*peers.length)];
+        this.connect(p);
+        setTimeout(()=>{this.validate();p.validate()},VALIDATION_DELAY);
+      } else setTimeout(()=>this.validate(),VALIDATION_DELAY);
+    },1000);
+  }
+  validate(){
+    if(this.stage!=='knowledge') return;
+    this.stage='intelligence';
+    this.el.setAttribute('data-stage',this.stage);
+    this.flash('intelligence-flash');
+    setTimeout(()=>this.flash('intelligence-flash'),400);
+  }
+  connect(partner){
+    const line=create('connection');
+    const update=()=>{
+      const r1=this.el.getBoundingClientRect();
+      const r2=partner.el.getBoundingClientRect();
+      const c=canvas.getBoundingClientRect();
+      const x1=r1.left-c.left+r1.width/2;
+      const y1=r1.top-c.top+r1.height/2;
+      const x2=r2.left-c.left+r2.width/2;
+      const y2=r2.top-c.top+r2.height/2;
+      const len=Math.hypot(x2-x1,y2-y1);
+      const ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
+      line.style.left=x1+'px';
+      line.style.top=y1+'px';
+      line.style.width=len+'px';
+      line.style.transform=`rotate(${ang}deg)`;
+    };
+    update();
+    setTimeout(()=>line.classList.add('active'),100);
+    const iv=setInterval(update,100);
+    setTimeout(()=>{
+      clearInterval(iv);
+      line.classList.remove('active');
+      setTimeout(()=>line.remove(),500);
+    },5000);
+  }
+  animateParticle(infoEl){
+    const p=document.createElement('div');
+    p.style.position='absolute';
+    p.style.width='6px';
+    p.style.height='6px';
+    p.style.background='var(--accent)';
+    p.style.borderRadius='50%';
+    const ir=infoEl.getBoundingClientRect();
+    const ar=this.el.getBoundingClientRect();
+    const cr=canvas.getBoundingClientRect();
+    p.style.left=(ir.left-cr.left)+'px';
+    p.style.top=(ir.top-cr.top)+'px';
+    canvas.appendChild(p);
+    p.animate([
+      {left:(ir.left-cr.left)+'px',top:(ir.top-cr.top)+'px',opacity:1},
+      {left:(ar.left-cr.left+ar.width/2)+'px',top:(ar.top-cr.top+ar.height/2)+'px',opacity:0}
+    ],{duration:800,easing:'ease-out'});
+    setTimeout(()=>p.remove(),800);
+  }
+  flash(cls){
+    this.el.classList.remove(cls);
+    void this.el.offsetWidth;
+    this.el.classList.add(cls);
+  }
+  dist(a,b){
+    const r1=a.getBoundingClientRect(),r2=b.getBoundingClientRect();
+    const x1=r1.left+r1.width/2,y1=r1.top+r1.height/2;
+    const x2=r2.left+r2.width/2,y2=r2.top+r2.height/2;
+    return Math.hypot(x1-x2,y1-y2);
+  }
+  manualBoost(){
+    if(this.stage==='collect'){
+      this.infoHeld=NEED_INFO;
+      this.upgrade();
+    }
+  }
+}
+
+const agents=[];
+for(let i=0;i<AGENT_COUNT;i++){
+  agents.push(new Agent());
+}
+
+/* Auto-add New Nodes */
+setInterval(()=>{
+  const remain=infos.filter(i=>!i.consumed).length;
+  if(remain<10){
+    for(let i=0;i<5;i++){
+      const node=create('info');
+      const pos=randomPos();
+      node.style.left=pos.x+'%';
+      node.style.top=pos.y+'%';
+      const valid=Math.random()<VALID_RATIO;
+      if(valid) node.classList.add('valid');
+      infos.push({el:node,valid,consumed:false,pos});
+    }
+  }
+},10000);
+
+/* ───────────  Knowledge Agent Animation for Features Section  ─────────── */
+const knowledgeCanvas = document.getElementById('knowledgeCanvas');
+const KNOWLEDGE_AGENT_COUNT = 25; // Increased for better circle formations
+
+class KnowledgeAgent {
+  constructor(){
+    this.el = document.createElement('div');
+    this.el.className = 'knowledge-agent';
+    // Start agents off-canvas to prevent layout shifts
+    this.pos = {x: -50, y: -50};
+    this.el.style.left = this.pos.x + 'px';
+    this.el.style.top = this.pos.y + 'px';
+    knowledgeCanvas.appendChild(this.el);
+    this.inCircle = false;
+  }
+  
+  moveTo(x, y, duration = 1000) {
+    this.el.style.transition = `left ${duration}ms ease-in-out, top ${duration}ms ease-in-out`;
+    this.el.style.left = x + 'px';
+    this.el.style.top = y + 'px';
+    this.pos = {x, y};
+  }
+}
+
+// Create circle connection line
+function createCircleConnection(agent1, agent2, duration = 2000) {
+  const line = document.createElement('div');
+  line.className = 'circle-connection';
+  knowledgeCanvas.appendChild(line);
+  
+  const updateLine = () => {
+    const canvasRect = knowledgeCanvas.getBoundingClientRect();
+    const r1 = agent1.el.getBoundingClientRect();
+    const r2 = agent2.el.getBoundingClientRect();
+    
+    const x1 = r1.left - canvasRect.left + r1.width/2;
+    const y1 = r1.top - canvasRect.top + r1.height/2;
+    const x2 = r2.left - canvasRect.left + r2.width/2;
+    const y2 = r2.top - canvasRect.top + r2.height/2;
+    
+    const len = Math.hypot(x2-x1, y2-y1);
+    const ang = Math.atan2(y2-y1, x2-x1) * 180/Math.PI;
+    
+    line.style.left = x1 + 'px';
+    line.style.top = y1 + 'px';
+    line.style.width = len + 'px';
+    line.style.transform = `rotate(${ang}deg)`;
+  };
+  
+  updateLine();
+  setTimeout(() => line.classList.add('active'), 100);
+  
+  const updateInterval = setInterval(updateLine, 50);
+  
+  setTimeout(() => {
+    clearInterval(updateInterval);
+    line.classList.remove('active');
+    setTimeout(() => line.remove(), 300);
+  }, duration);
+}
+
+// Utility to shuffle array
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Enhanced circle formation ritual
+function circleRitual() {
+  // Reset all agents to not be in circles
+  knowledgeAgents.forEach(agent => agent.inCircle = false);
+  
+  const canvasRect = knowledgeCanvas.getBoundingClientRect();
+  const canvasWidth = canvasRect.width;
+  const canvasHeight = canvasRect.height;
+  
+  // Create 1-5 random circles
+  const numCircles = Math.floor(Math.random() * 5) + 1;
+  const circleSizes = [5, 6, 8];
+  
+  let usedAgents = 0;
+  
+  for (let circleIndex = 0; circleIndex < numCircles && usedAgents < knowledgeAgents.length; circleIndex++) {
+    const circleSize = circleSizes[Math.floor(Math.random() * circleSizes.length)];
+    const availableAgents = knowledgeAgents.slice(usedAgents, usedAgents + circleSize);
+    
+    if (availableAgents.length < circleSize) break;
+    
+    // Position circle randomly within canvas bounds
+    const centerX = rand(canvasWidth * 0.25, canvasWidth * 0.75);
+    const centerY = rand(canvasHeight * 0.25, canvasHeight * 0.75);
+    const radius = Math.min(canvasWidth, canvasHeight) * rand(0.15, 0.25);
+    
+    // Position agents in circle
+    availableAgents.forEach((agent, i) => {
+      const angle = (2 * Math.PI / circleSize) * i;
+      const x = centerX + radius * Math.cos(angle);
+      const y = centerY + radius * Math.sin(angle);
+      
+      agent.moveTo(x, y, 1000);
+      agent.inCircle = true;
+    });
+    
+    // Create connections between all nodes in the circle after positioning
+    setTimeout(() => {
+      for (let i = 0; i < availableAgents.length; i++) {
+        for (let j = i + 1; j < availableAgents.length; j++) {
+          createCircleConnection(availableAgents[i], availableAgents[j], 2000);
+        }
+      }
+      
+      // Add glow effect
+      availableAgents.forEach(agent => {
+        agent.el.classList.add('circle-glow');
+      });
+    }, 1000);
+    
+    // Remove glow and disperse
+    setTimeout(() => {
+      availableAgents.forEach(agent => {
+        agent.el.classList.remove('circle-glow');
+        agent.el.style.transition = 'opacity 1s ease-out';
+        agent.el.style.opacity = '0.3';
+      });
+    }, 3000);
+    
+    // Reset for next ritual
+    setTimeout(() => {
+      availableAgents.forEach(agent => {
+        agent.el.style.opacity = '1';
+        agent.moveTo(-50, -50, 0); // Move off-canvas
+        agent.inCircle = false;
+      });
+    }, 4500);
+    
+    usedAgents += circleSize;
+  }
+}
+
+// Initialize knowledge agents
+const knowledgeAgents = [];
+for(let i = 0; i < KNOWLEDGE_AGENT_COUNT; i++){
+  knowledgeAgents.push(new KnowledgeAgent());
+}
+
+// Start rituals every 8 seconds for better spacing
+setInterval(circleRitual, 8000);
+
+/* ───────────  Anonymous Email Service  ─────────── */
+async function sendAnonymousEmail(email) {
+  try {
+    // Using EmailJS service for anonymous email sending
+    const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        service_id: 'service_demo_requests',
+        template_id: 'template_demo_request',
+        user_id: 'user_vigilio_public',
+        template_params: {
+          user_email: email,
+          to_email: 'transform@vigilio.ai',
+          message: `Demo request from: ${email}`,
+          timestamp: new Date().toISOString()
+        }
+      })
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Email send error:', error);
+    return false;
+  }
+}
+
+/* ───────────  CTA Button Behaviors  ─────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  const learnMoreBtn = document.getElementById('learnMoreBtn');
+  const requestDemoBtn = document.getElementById('requestDemoBtn');
+  const processSection = document.getElementById('processSection');
+  const dialogOverlay = document.getElementById('dialogOverlay');
+  const dialogClose = document.getElementById('dialogClose');
+  const dialogRequest = document.getElementById('dialogRequest');
+  const demoEmail = document.getElementById('demoEmail');
+  const dialogMessage = document.getElementById('dialogMessage');
+
+  // Learn More button - scroll to process section
+  learnMoreBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    processSection.scrollIntoView({behavior:'smooth'});
+  });
+
+  // Request Demo button - show dialog
+  requestDemoBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    dialogOverlay.classList.add('active');
+    setTimeout(() => demoEmail.focus(), 300);
+  });
+
+  // Close dialog with X button
+  dialogClose.addEventListener('click', function() {
+    dialogOverlay.classList.remove('active');
+    resetDialog();
+  });
+
+  // Close dialog when clicking overlay
+  dialogOverlay.addEventListener('click', function(e) {
+    if (e.target === dialogOverlay) {
+      dialogOverlay.classList.remove('active');
+      resetDialog();
+    }
+  });
+
+  function resetDialog() {
+    demoEmail.value = '';
+    dialogMessage.innerHTML = '';
+    dialogRequest.disabled = false;
+    dialogRequest.textContent = 'Request';
+  }
+
+  function showMessage(text, isError = false) {
+    dialogMessage.innerHTML = `<div class="${isError ? 'error-message' : 'success-message'}">${text}</div>`;
+  }
+
+  // Handle form submission with anonymous email
+  dialogRequest.addEventListener('click', async function() {
+    const email = demoEmail.value.trim();
+    if (!email) {
+      demoEmail.focus();
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showMessage('Please enter a valid email address.', true);
+      demoEmail.focus();
+      return;
+    }
+
+    // Disable button and show loading
+    dialogRequest.disabled = true;
+    dialogRequest.textContent = 'Sending...';
+
+    try {
+      // Try anonymous email service first
+      const emailSent = await sendAnonymousEmail(email);
+      
+      if (emailSent) {
+        showMessage('✅ Demo request sent successfully! We\'ll be in touch soon.');
+        setTimeout(() => {
+          dialogOverlay.classList.remove('active');
+          resetDialog();
+        }, 3000);
+      } else {
+        // Fallback to mailto
+        window.location.href = `mailto:transform@vigilio.ai?subject=Demo%20Request&body=Email:%20${encodeURIComponent(email)}`;
+        showMessage('✅ Opening your email client to complete the request.');
+        setTimeout(() => {
+          dialogOverlay.classList.remove('active');
+          resetDialog();
+        }, 2000);
+      }
+    } catch (error) {
+      // Fallback to mailto on any error
+      window.location.href = `mailto:transform@vigilio.ai?subject=Demo%20Request&body=Email:%20${encodeURIComponent(email)}`;
+      showMessage('✅ Opening your email client to complete the request.');
+      setTimeout(() => {
+        dialogOverlay.classList.remove('active');
+        resetDialog();
+      }, 2000);
+    }
+  });
+
+  // Enter key support for email input
+  demoEmail.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      dialogRequest.click();
+    }
+  });
+});
+</script>
+</body>
+</html>
