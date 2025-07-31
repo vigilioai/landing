@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Vigilio.ai – Vigilantly Amplify Intelligence</title>
+<title>Vigilio.ai – Intelligence Accumulator</title>
 
 <!-- Web Font -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -258,7 +258,7 @@ body {
   z-index: 10;
 }
 
-/* Process Grid - Circle Visibility */
+/* Process Grid - Fixed Circle Visibility */
 .process-grid {
   display: grid; 
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
@@ -361,36 +361,181 @@ body {
   color: var(--gray);
 }
 
-/* Knowledge Canvas for Features Section */
+/* Inter-stellar Knowledge Canvas */
 .knowledge-canvas {
   position: absolute; 
   top: 0; right: 0; bottom: 0; left: 0;
   pointer-events: none; 
   z-index: 1;
-  opacity: 0.6;
-  /* Prevent layout shifts */
+  opacity: 0.8;
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background: radial-gradient(circle at 30% 70%, rgba(79,209,199,0.03) 0%, transparent 50%),
+              radial-gradient(circle at 70% 30%, rgba(37,99,235,0.03) 0%, transparent 50%);
 }
 
 .knowledge-agent {
   position: absolute; border-radius: 50%;
-  width: 24px; height: 24px; cursor: pointer;
+  width: 12px; height: 12px;
   pointer-events: none; display: flex;
   align-items: center; justify-content: center;
-  transition: all .5s ease;
-  background: var(--intelligence-color);
-  border: 2px solid rgba(255,255,255,.9);
-  box-shadow: 0 0 12px rgba(139,92,246,.4);
-  /* Prevent any layout influence */
+  transition: all .8s cubic-bezier(0.4, 0, 0.2, 1);
+  background: radial-gradient(circle, #ffffff 0%, #e0f2fe 60%, #0ea5e9 100%);
+  border: 1px solid rgba(14,165,233,0.3);
+  box-shadow: 0 0 8px rgba(14,165,233,0.2), 
+              inset 0 1px 2px rgba(255,255,255,0.8);
   will-change: transform;
+  opacity: 0.7;
 }
 
 .knowledge-agent::after {
-  content: ''; width: 8px; height: 8px;
-  background: #fff; border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  content: ''; 
+  width: 4px; height: 4px;
+  background: radial-gradient(circle, #ffffff 0%, #0ea5e9 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 3px rgba(255,255,255,0.9);
+}
+
+/* Probing State */
+.knowledge-agent.probing {
+  background: radial-gradient(circle, #fbbf24 0%, #f59e0b 60%, #d97706 100%);
+  border-color: rgba(251,191,36,0.4);
+  box-shadow: 0 0 12px rgba(251,191,36,0.4), 
+              inset 0 1px 2px rgba(255,255,255,0.9);
+  animation: stellarPulse 2s ease-in-out infinite alternate;
+}
+
+/* Linked State */
+.knowledge-agent.linked {
+  background: radial-gradient(circle, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%);
+  border-color: rgba(167,139,250,0.5);
+  box-shadow: 0 0 15px rgba(167,139,250,0.6), 
+              inset 0 1px 2px rgba(255,255,255,0.9);
+}
+
+/* Knowledge Search State */
+.knowledge-agent.searching {
+  background: radial-gradient(circle, #4fd1c7 0%, #06b6d4 60%, #0891b2 100%);
+  border-color: rgba(79,209,199,0.6);
+  box-shadow: 0 0 20px rgba(79,209,199,0.8), 
+              inset 0 1px 2px rgba(255,255,255,0.9);
+  animation: slimeMoldSearch 3s ease-in-out infinite;
+}
+
+/* Inter-stellar Animations */
+@keyframes stellarPulse {
+  0%   { 
+    transform: scale(1); 
+    box-shadow: 0 0 12px rgba(251,191,36,0.4), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+  100% { 
+    transform: scale(1.3); 
+    box-shadow: 0 0 25px rgba(251,191,36,0.8), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+}
+
+@keyframes slimeMoldSearch {
+  0%   { 
+    transform: scale(1) rotate(0deg); 
+    box-shadow: 0 0 20px rgba(79,209,199,0.8), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+  33%  { 
+    transform: scale(1.2) rotate(120deg); 
+    box-shadow: 0 0 30px rgba(79,209,199,1), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+  66%  { 
+    transform: scale(0.9) rotate(240deg); 
+    box-shadow: 0 0 15px rgba(79,209,199,0.6), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+  100% { 
+    transform: scale(1) rotate(360deg); 
+    box-shadow: 0 0 20px rgba(79,209,199,0.8), inset 0 1px 2px rgba(255,255,255,0.9);
+  }
+}
+
+/* Inter-stellar Connection Lines */
+.stellar-connection {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(167,139,250,0.3) 20%, 
+    rgba(167,139,250,0.8) 50%, 
+    rgba(167,139,250,0.3) 80%, 
+    transparent 100%);
+  opacity: 0;
+  transform-origin: left center;
+  border-radius: 1px;
+  transition: opacity .5s ease;
+  pointer-events: none;
+  filter: drop-shadow(0 0 3px rgba(167,139,250,0.4));
+}
+
+.stellar-connection.active {
+  opacity: 1;
+  animation: stellarFlow 2s ease-in-out infinite;
+}
+
+@keyframes stellarFlow {
+  0%, 100% { 
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(167,139,250,0.3) 20%, 
+      rgba(167,139,250,0.8) 50%, 
+      rgba(167,139,250,0.3) 80%, 
+      transparent 100%);
+  }
+  50% { 
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(79,209,199,0.3) 20%, 
+      rgba(79,209,199,1) 50%, 
+      rgba(79,209,199,0.3) 80%, 
+      transparent 100%);
+  }
+}
+
+/* Slime Mold Search Connection */
+.slime-connection {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(79,209,199,0.4) 25%, 
+    rgba(79,209,199,1) 50%, 
+    rgba(79,209,199,0.4) 75%, 
+    transparent 100%);
+  opacity: 0;
+  transform-origin: left center;
+  border-radius: 2px;
+  transition: opacity .3s ease;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px rgba(79,209,199,0.6));
+}
+
+.slime-connection.active {
+  opacity: 1;
+  animation: slimeFlow 1.5s ease-in-out forwards;
+}
+
+@keyframes slimeFlow {
+  0% { 
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  20% { 
+    transform: scaleX(0.3);
+    opacity: 0.8;
+  }
+  70% { 
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% { 
+    transform: scaleX(1);
+    opacity: 0.7;
+  }
 }
 
 .vision-section {
@@ -515,40 +660,6 @@ body {
   color: #ef4444; font-weight: 600;
   text-align: center; margin-top: 16px;
 }
-
-/* Circle formation animations */
-@keyframes linkGlow {
-  0%   { box-shadow: 0 0 0 0 rgba(79,209,199,0.8); }
-  50%  { box-shadow: 0 0 8px 8px rgba(79,209,199,0.6); }
-  100% { box-shadow: 0 0 0 0 rgba(79,209,199,0); }
-}
-
-@keyframes circlePulse {
-  0%   { box-shadow: 0 0 0 0 rgba(139,92,246,0.8); }
-  50%  { box-shadow: 0 0 16px 16px rgba(139,92,246,0.6); }
-  100% { box-shadow: 0 0 0 0 rgba(139,92,246,0); }
-}
-
-.knowledge-agent.circle-glow {
-  animation: circlePulse 1s ease-in-out infinite alternate;
-}
-
-/* Circle connection lines */
-.circle-connection {
-  position: absolute;
-  height: 2px;
-  background: linear-gradient(90deg, transparent, var(--intelligence-color), transparent);
-  opacity: 0;
-  transform-origin: left center;
-  border-radius: 1px;
-  transition: opacity .3s ease;
-  pointer-events: none;
-}
-
-.circle-connection.active {
-  opacity: 0.8;
-  animation: linkGlow 0.8s ease-out forwards;
-}
 </style>
 </head>
 <body>
@@ -613,6 +724,7 @@ body {
 <!-- Features Section -->
 <section class="features-section">
   <div class="features-container">
+    <div class="knowledge-canvas" id="knowledgeCanvas"></div>
     <div class="features-header">
       <h2>Powered by Next-Generation AI</h2>
     </div>
@@ -632,7 +744,7 @@ body {
       <div class="feature-card" style="position: relative; overflow: hidden; min-height: 200px;">
         <h3>Intelligence Networks</h3>
         <p>Watch AI agents form dynamic knowledge circles, sharing insights through interconnected neural pathways.</p>
-        <div class="knowledge-canvas" id="knowledgeCanvas"></div>
+       
       </div>
     </div>
   </div>
@@ -858,157 +970,269 @@ setInterval(()=>{
   }
 },10000);
 
-/* ───────────  Knowledge Agent Animation for Features Section  ─────────── */
+/* ───────────  UPGRADED: Inter-stellar Knowledge Agent Animation  ─────────── */
 const knowledgeCanvas = document.getElementById('knowledgeCanvas');
-const KNOWLEDGE_AGENT_COUNT = 25; // Increased for better circle formations
+const KNOWLEDGE_AGENT_COUNT = 20;
 
-class KnowledgeAgent {
+// Inter-stellar topics for expertise seeking
+const STELLAR_TOPICS = [
+  'quantum-finance', 'neural-markets', 'crypto-dynamics', 'risk-fusion',
+  'data-astronomy', 'algorithmic-nebula', 'pattern-constellation', 'insight-galaxy',
+  'temporal-analysis', 'cosmic-correlations', 'stellar-predictions', 'void-opportunities'
+];
+
+class StellarAgent {
   constructor(){
     this.el = document.createElement('div');
     this.el.className = 'knowledge-agent';
-    // Start agents off-canvas to prevent layout shifts
     this.pos = {x: -50, y: -50};
     this.el.style.left = this.pos.x + 'px';
     this.el.style.top = this.pos.y + 'px';
     knowledgeCanvas.appendChild(this.el);
-    this.inCircle = false;
+    
+    this.state = 'dormant'; // dormant -> probing -> linked -> searching
+    this.expertise = STELLAR_TOPICS[Math.floor(Math.random() * STELLAR_TOPICS.length)];
+    this.connections = [];
+    this.searchTarget = null;
   }
   
-  moveTo(x, y, duration = 1000) {
-    this.el.style.transition = `left ${duration}ms ease-in-out, top ${duration}ms ease-in-out`;
+  moveTo(x, y, duration = 1200) {
+    this.el.style.transition = `left ${duration}ms cubic-bezier(0.4, 0, 0.2, 1), top ${duration}ms cubic-bezier(0.4, 0, 0.2, 1)`;
     this.el.style.left = x + 'px';
     this.el.style.top = y + 'px';
     this.pos = {x, y};
   }
-}
-
-// Create circle connection line
-function createCircleConnection(agent1, agent2, duration = 2000) {
-  const line = document.createElement('div');
-  line.className = 'circle-connection';
-  knowledgeCanvas.appendChild(line);
   
-  const updateLine = () => {
-    const canvasRect = knowledgeCanvas.getBoundingClientRect();
-    const r1 = agent1.el.getBoundingClientRect();
-    const r2 = agent2.el.getBoundingClientRect();
-    
-    const x1 = r1.left - canvasRect.left + r1.width/2;
-    const y1 = r1.top - canvasRect.top + r1.height/2;
-    const x2 = r2.left - canvasRect.left + r2.width/2;
-    const y2 = r2.top - canvasRect.top + r2.height/2;
-    
-    const len = Math.hypot(x2-x1, y2-y1);
-    const ang = Math.atan2(y2-y1, x2-x1) * 180/Math.PI;
-    
-    line.style.left = x1 + 'px';
-    line.style.top = y1 + 'px';
-    line.style.width = len + 'px';
-    line.style.transform = `rotate(${ang}deg)`;
-  };
-  
-  updateLine();
-  setTimeout(() => line.classList.add('active'), 100);
-  
-  const updateInterval = setInterval(updateLine, 50);
-  
-  setTimeout(() => {
-    clearInterval(updateInterval);
-    line.classList.remove('active');
-    setTimeout(() => line.remove(), 300);
-  }, duration);
-}
-
-// Utility to shuffle array
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  setState(newState) {
+    this.el.classList.remove('probing', 'linked', 'searching');
+    this.state = newState;
+    if (newState !== 'dormant') {
+      this.el.classList.add(newState);
+    }
   }
-  return a;
-}
-
-// Enhanced circle formation ritual
-function circleRitual() {
-  // Reset all agents to not be in circles
-  knowledgeAgents.forEach(agent => agent.inCircle = false);
   
-  const canvasRect = knowledgeCanvas.getBoundingClientRect();
-  const canvasWidth = canvasRect.width;
-  const canvasHeight = canvasRect.height;
-  
-  // Create 1-5 random circles
-  const numCircles = Math.floor(Math.random() * 5) + 1;
-  const circleSizes = [5, 6, 8];
-  
-  let usedAgents = 0;
-  
-  for (let circleIndex = 0; circleIndex < numCircles && usedAgents < knowledgeAgents.length; circleIndex++) {
-    const circleSize = circleSizes[Math.floor(Math.random() * circleSizes.length)];
-    const availableAgents = knowledgeAgents.slice(usedAgents, usedAgents + circleSize);
+  // Step 1: Probe to seek expertise and pick friends
+  startProbing() {
+    this.setState('probing');
     
-    if (availableAgents.length < circleSize) break;
+    // Move to a random position to start probing
+    const canvasRect = knowledgeCanvas.getBoundingClientRect();
+    const x = rand(canvasRect.width * 0.1, canvasRect.width * 0.9);
+    const y = rand(canvasRect.height * 0.1, canvasRect.height * 0.9);
+    this.moveTo(x, y, 1000);
     
-    // Position circle randomly within canvas bounds
-    const centerX = rand(canvasWidth * 0.25, canvasWidth * 0.75);
-    const centerY = rand(canvasHeight * 0.25, canvasHeight * 0.75);
-    const radius = Math.min(canvasWidth, canvasHeight) * rand(0.15, 0.25);
+    // Look for compatible agents after positioning
+    setTimeout(() => this.seekCompatibleAgents(), 1200);
+  }
+  
+  seekCompatibleAgents() {
+    const nearbyAgents = stellarAgents.filter(agent => 
+      agent !== this && 
+      agent.state === 'probing' &&
+      this.distanceTo(agent) < 150 &&
+      (agent.expertise === this.expertise || Math.random() < 0.3)
+    );
     
-    // Position agents in circle
-    availableAgents.forEach((agent, i) => {
-      const angle = (2 * Math.PI / circleSize) * i;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
+    if (nearbyAgents.length > 0) {
+      // Pick 1-3 compatible friends
+      const friendCount = Math.min(3, Math.max(1, nearbyAgents.length));
+      const friends = nearbyAgents.slice(0, friendCount);
       
-      agent.moveTo(x, y, 1000);
-      agent.inCircle = true;
+      // Step 2: Link with selected friends
+      this.linkWithFriends(friends);
+    }
+  }
+  
+  // Step 2: Link each other
+  linkWithFriends(friends) {
+    this.setState('linked');
+    this.connections = friends;
+    
+    friends.forEach(friend => {
+      friend.setState('linked');
+      if (!friend.connections.includes(this)) {
+        friend.connections.push(this);
+      }
+      this.createStellarConnection(friend);
     });
     
-    // Create connections between all nodes in the circle after positioning
-    setTimeout(() => {
-      for (let i = 0; i < availableAgents.length; i++) {
-        for (let j = i + 1; j < availableAgents.length; j++) {
-          createCircleConnection(availableAgents[i], availableAgents[j], 2000);
+    // After linking, start knowledge search phase
+    setTimeout(() => this.initiateKnowledgeSearch(), 2000);
+  }
+  
+  // Step 3: Knowledge search like Slime Molds
+  initiateKnowledgeSearch() {
+    this.setState('searching');
+    
+    // Create a knowledge search target
+    const canvasRect = knowledgeCanvas.getBoundingClientRect();
+    this.searchTarget = {
+      x: rand(canvasRect.width * 0.2, canvasRect.width * 0.8),
+      y: rand(canvasRect.height * 0.2, canvasRect.height * 0.8)
+    };
+    
+    // Slime mold behavior: intelligent pathfinding
+    this.slimeMoldSearch();
+  }
+  
+  slimeMoldSearch() {
+    // Move toward search target with organic, slime-like behavior
+    const steps = 5;
+    const stepDelay = 400;
+    
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => {
+        // Calculate intermediate position with organic randomness
+        const progress = (i + 1) / steps;
+        const organicFactor = 0.3 * Math.sin(progress * Math.PI);
+        
+        const targetX = this.pos.x + (this.searchTarget.x - this.pos.x) * progress;
+        const targetY = this.pos.y + (this.searchTarget.y - this.pos.y) * progress;
+        
+        // Add organic deviation
+        const deviationX = (Math.random() - 0.5) * 60 * organicFactor;
+        const deviationY = (Math.random() - 0.5) * 60 * organicFactor;
+        
+        this.moveTo(targetX + deviationX, targetY + deviationY, stepDelay - 50);
+        
+        // Create slime connections during search
+        if (i > 0 && Math.random() < 0.6) {
+          this.connections.forEach(friend => {
+            if (friend.state === 'searching') {
+              this.createSlimeConnection(friend);
+            }
+          });
         }
-      }
+        
+        // On final step, complete the search
+        if (i === steps - 1) {
+          setTimeout(() => this.completeSearch(), stepDelay);
+        }
+      }, i * stepDelay);
+    }
+  }
+  
+  completeSearch() {
+    // Flash to indicate knowledge discovery
+    this.el.style.transform = 'scale(1.5)';
+    this.el.style.filter = 'brightness(1.5)';
+    
+    setTimeout(() => {
+      this.el.style.transform = 'scale(1)';
+      this.el.style.filter = 'brightness(1)';
       
-      // Add glow effect
-      availableAgents.forEach(agent => {
-        agent.el.classList.add('circle-glow');
-      });
-    }, 1000);
+      // Disperse after search
+      setTimeout(() => this.disperse(), 800);
+    }, 300);
+  }
+  
+  disperse() {
+    this.setState('dormant');
+    this.connections = [];
+    this.moveTo(-50, -50, 1000);
+  }
+  
+  distanceTo(otherAgent) {
+    const dx = this.pos.x - otherAgent.pos.x;
+    const dy = this.pos.y - otherAgent.pos.y;
+    return Math.sqrt(dx*dx + dy*dy);
+  }
+  
+  createStellarConnection(partner) {
+    const line = document.createElement('div');
+    line.className = 'stellar-connection';
+    knowledgeCanvas.appendChild(line);
     
-    // Remove glow and disperse
+    const updateLine = () => {
+      const canvasRect = knowledgeCanvas.getBoundingClientRect();
+      const r1 = this.el.getBoundingClientRect();
+      const r2 = partner.el.getBoundingClientRect();
+      
+      const x1 = r1.left - canvasRect.left + r1.width/2;
+      const y1 = r1.top - canvasRect.top + r1.height/2;
+      const x2 = r2.left - canvasRect.left + r2.width/2;
+      const y2 = r2.top - canvasRect.top + r2.height/2;
+      
+      const len = Math.hypot(x2-x1, y2-y1);
+      const ang = Math.atan2(y2-y1, x2-x1) * 180/Math.PI;
+      
+      line.style.left = x1 + 'px';
+      line.style.top = y1 + 'px';
+      line.style.width = len + 'px';
+      line.style.transform = `rotate(${ang}deg)`;
+    };
+    
+    updateLine();
+    setTimeout(() => line.classList.add('active'), 200);
+    
+    const updateInterval = setInterval(updateLine, 100);
+    
     setTimeout(() => {
-      availableAgents.forEach(agent => {
-        agent.el.classList.remove('circle-glow');
-        agent.el.style.transition = 'opacity 1s ease-out';
-        agent.el.style.opacity = '0.3';
-      });
-    }, 3000);
+      clearInterval(updateInterval);
+      line.classList.remove('active');
+      setTimeout(() => line.remove(), 500);
+    }, 4000);
+  }
+  
+  createSlimeConnection(partner) {
+    const line = document.createElement('div');
+    line.className = 'slime-connection';
+    knowledgeCanvas.appendChild(line);
     
-    // Reset for next ritual
+    const updateLine = () => {
+      const canvasRect = knowledgeCanvas.getBoundingClientRect();
+      const r1 = this.el.getBoundingClientRect();
+      const r2 = partner.el.getBoundingClientRect();
+      
+      const x1 = r1.left - canvasRect.left + r1.width/2;
+      const y1 = r1.top - canvasRect.top + r1.height/2;
+      const x2 = r2.left - canvasRect.left + r2.width/2;
+      const y2 = r2.top - canvasRect.top + r2.height/2;
+      
+      const len = Math.hypot(x2-x1, y2-y1);
+      const ang = Math.atan2(y2-y1, x2-x1) * 180/Math.PI;
+      
+      line.style.left = x1 + 'px';
+      line.style.top = y1 + 'px';
+      line.style.width = len + 'px';
+      line.style.transform = `rotate(${ang}deg)`;
+    };
+    
+    updateLine();
+    setTimeout(() => line.classList.add('active'), 100);
+    
     setTimeout(() => {
-      availableAgents.forEach(agent => {
-        agent.el.style.opacity = '1';
-        agent.moveTo(-50, -50, 0); // Move off-canvas
-        agent.inCircle = false;
-      });
-    }, 4500);
-    
-    usedAgents += circleSize;
+      line.classList.remove('active');
+      setTimeout(() => line.remove(), 300);
+    }, 1500);
   }
 }
 
-// Initialize knowledge agents
-const knowledgeAgents = [];
-for(let i = 0; i < KNOWLEDGE_AGENT_COUNT; i++){
-  knowledgeAgents.push(new KnowledgeAgent());
+// Enhanced orchestration function
+function stellarKnowledgeRitual() {
+  // Select 8-12 agents for this ritual
+  const ritualSize = Math.floor(Math.random() * 5) + 8;
+  const selectedAgents = stellarAgents.slice(0, ritualSize);
+  
+  // Step 1: Start probing phase (staggered)
+  selectedAgents.forEach((agent, index) => {
+    setTimeout(() => {
+      agent.startProbing();
+    }, index * 200);
+  });
 }
 
-// Start rituals every 8 seconds for better spacing
-setInterval(circleRitual, 8000);
+// Initialize stellar agents
+const stellarAgents = [];
+for(let i = 0; i < KNOWLEDGE_AGENT_COUNT; i++){
+  stellarAgents.push(new StellarAgent());
+}
+
+// Start rituals every 12 seconds for optimal viewing
+setInterval(stellarKnowledgeRitual, 12000);
+
+// Initial ritual
+setTimeout(stellarKnowledgeRitual, 2000);
 
 /* ───────────  Anonymous Email Service  ─────────── */
 async function sendAnonymousEmail(email) {
