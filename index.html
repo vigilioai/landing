@@ -420,7 +420,7 @@ body {
   border-color: rgba(79,209,199,0.6);
   box-shadow: 0 0 20px rgba(79,209,199,0.8), 
               inset 0 1px 2px rgba(255,255,255,0.9);
-  animation: slimeMoldSearch 3s ease-in-out infinite;
+  animation: organicSearch 3s ease-in-out infinite;
 }
 
 /* Inter-stellar Animations */
@@ -435,7 +435,7 @@ body {
   }
 }
 
-@keyframes slimeMoldSearch {
+@keyframes organicSearch {
   0%   { 
     transform: scale(1) rotate(0deg); 
     box-shadow: 0 0 20px rgba(79,209,199,0.8), inset 0 1px 2px rgba(255,255,255,0.9);
@@ -496,8 +496,8 @@ body {
   }
 }
 
-/* Slime Mold Search Connection */
-.slime-connection {
+/* Organic Search Connection */
+.organic-connection {
   position: absolute;
   height: 2px;
   background: linear-gradient(90deg, 
@@ -514,12 +514,12 @@ body {
   filter: drop-shadow(0 0 5px rgba(79,209,199,0.6));
 }
 
-.slime-connection.active {
+.organic-connection.active {
   opacity: 1;
-  animation: slimeFlow 1.5s ease-in-out forwards;
+  animation: organicFlow 1.5s ease-in-out forwards;
 }
 
-@keyframes slimeFlow {
+@keyframes organicFlow {
   0% { 
     transform: scaleX(0);
     opacity: 0;
@@ -1060,7 +1060,7 @@ class StellarAgent {
     setTimeout(() => this.initiateKnowledgeSearch(), 2000);
   }
   
-  // Step 3: Knowledge search like Slime Molds
+  // Step 3: Knowledge search like organics
   initiateKnowledgeSearch() {
     this.setState('searching');
     
@@ -1071,12 +1071,12 @@ class StellarAgent {
       y: rand(canvasRect.height * 0.2, canvasRect.height * 0.8)
     };
     
-    // Slime mold behavior: intelligent pathfinding
-    this.slimeMoldSearch();
+    // Organic behavior: intelligent pathfinding
+    this.organicSearch();
   }
   
-  slimeMoldSearch() {
-    // Move toward search target with organic, slime-like behavior
+  organicSearch() {
+    // Move toward search target with organic, natural behavior
     const steps = 5;
     const stepDelay = 400;
     
@@ -1095,11 +1095,11 @@ class StellarAgent {
         
         this.moveTo(targetX + deviationX, targetY + deviationY, stepDelay - 50);
         
-        // Create slime connections during search
+        // Create organic connections during search
         if (i > 0 && Math.random() < 0.6) {
           this.connections.forEach(friend => {
             if (friend.state === 'searching') {
-              this.createSlimeConnection(friend);
+              this.createOrganicConnection(friend);
             }
           });
         }
@@ -1174,9 +1174,9 @@ class StellarAgent {
     }, 4000);
   }
   
-  createSlimeConnection(partner) {
+  createOrganicConnection(partner) {
     const line = document.createElement('div');
-    line.className = 'slime-connection';
+    line.className = 'organic-connection';
     knowledgeCanvas.appendChild(line);
     
     const updateLine = () => {
