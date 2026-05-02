@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DLP Policy Studio — Vigilio</title>
+  <meta name="description" content="Vigilio DLP Policy Studio — on-premise LLM security governance control plane.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DLP Policy Studio — Vigilio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Vigilio Design System v2 — DLP Policy Studio
+   Design language: DeepMind-grade readiness. Clean authority.
+   Light-only. No dark mode toggle. Consistent, precise, calm.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ──────────────────────────────────────────────────── */
+:root {
+  --paper:       #FFFFFF;
+  --paper-2:     #F6F8FB;
+  --paper-3:     #ECEFF5;
+  --line:        #E2E6EE;
+  --line-2:      #C8CFDC;
+  --ink:         #0B1020;
+  --ink-2:       #1A2236;
+  --fg-2:        #3A4358;
+  --muted:       #6B7388;
+  --muted-2:     #98A0B5;
+  --green:       #0E9F6B;
+  --green-deep:  #0A7B53;
+  --green-soft:  rgba(14,159,107,0.10);
+  --blue:        #2B5BD7;
+  --blue-deep:   #1E45B0;
+  --blue-soft:   rgba(43,91,215,0.10);
+  --red:         #C0392B;
+  --red-soft:    rgba(192,57,43,0.10);
+  --amber:       #964219;
+  --amber-soft:  rgba(150,66,25,0.10);
+  --orange:      #da7101;
+  --orange-soft: rgba(218,113,1,0.10);
+  --purple:      #7a39bb;
+  --purple-soft: rgba(122,57,187,0.10);
+
+  --serif: 'Instrument Serif', Georgia, serif;
+  --sans:  'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:  'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(11,16,32,0.06);
+  --shadow-md: 0 4px 16px rgba(11,16,32,0.08);
+  --shadow-lg: 0 16px 48px rgba(11,16,32,0.12);
+
+  --sidebar-w: 224px;
+  --header-h:  58px;
+  --transition: 160ms cubic-bezier(0.16,1,0.3,1);
+
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 15.5px;
+  --text-lg:   clamp(18px,1.4vw,22px);
+  --text-xl:   clamp(22px,2vw,32px);
+}
+
+/* ── Reset ───────────────────────────────────────────────────── */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { -webkit-font-smoothing:antialiased; scroll-behavior:smooth; }
+body {
+  font-family: var(--sans);
+  font-size: var(--text-base);
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100dvh;
+  line-height: 1.6;
+}
+img,svg { display:block; max-width:100%; }
+button { cursor:pointer; background:none; border:none; font:inherit; color:inherit; }
+input,textarea,select { font:inherit; color:inherit; }
+ul { list-style:none; }
+a { color:inherit; text-decoration:none; }
+button,a,[role=button] { transition:color var(--transition),background var(--transition),border-color var(--transition),box-shadow var(--transition),opacity var(--transition); }
+:focus-visible { outline:2px solid var(--green); outline-offset:3px; border-radius:var(--radius-sm); }
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--line-2); border-radius:var(--radius-full); }
+
+/* ── Layout Shell ────────────────────────────────────────────── */
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  min-height: 100dvh;
+}
+
+/* ── Topbar ──────────────────────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow-sm);
+}
+
+/* Vigilio logo */
+.logo { margin-right: auto; }
+.vigilio-logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.logo-hex { width:28px; height:28px; position:relative; display:inline-block; flex-shrink:0; }
+.logo-hex .outer {
+  width:100%; height:100%;
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
+  display:block; position:relative;
+}
+.logo-hex .inner {
+  position:absolute; width:84%; height:84%; top:8%; left:8%;
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  background: var(--paper);
+}
+.logo-hex .core {
+  position:absolute; width:36%; height:36%; top:32%; left:32%;
+  background: var(--green); transform:rotate(45deg);
+}
+.v-name {
+  font-family: var(--serif);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.v-sep {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+  padding-left: 10px;
+  margin-left: 2px;
+}
+
+.topbar-badge {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: var(--green-soft);
+  color: var(--green);
+  border: 1px solid rgba(14,159,107,0.2);
+}
+.node-status {
+  display: flex; align-items: center; gap: 8px;
+  font-size: var(--text-xs); font-family: var(--mono);
+  letter-spacing: 0.08em; color: var(--muted);
+}
+.node-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(14,159,107,0.18);
+}
+.topbar-actions { display:flex; align-items:center; gap:8px; }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted);
+}
+.icon-btn:hover { background: var(--paper-3); color: var(--ink); }
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+.sidebar {
+  grid-row: 2;
+  background: var(--paper-2);
+  border-right: 1px solid var(--line);
+  padding: 20px 12px 0;
+  display: flex; flex-direction: column; gap: 2px;
+  position: sticky; top: var(--header-h);
+  height: calc(100dvh - var(--header-h));
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.nav-section {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted-2);
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 16px 10px 6px;
+}
+.nav-section:first-child { padding-top: 4px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  color: var(--fg-2);
+  cursor: pointer; user-select: none;
+}
+.nav-item:hover { background: var(--paper-3); color: var(--ink); }
+.nav-item.active {
+  background: var(--green-soft);
+  color: var(--green);
+  font-weight: 500;
+}
+.nav-item svg { flex-shrink:0; opacity:0.7; }
+.nav-item.active svg { opacity:1; }
+.nav-spacer { flex: 1; }
+
+/* ── Main Content ────────────────────────────────────────────── */
+.main-content {
+  grid-row: 2;
+  padding: 28px 36px 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+}
+
+/* ── Page sections ───────────────────────────────────────────── */
+.page-section { display: none; }
+.page-section.active { display: block; flex: 1; padding-bottom: 28px; }
+.page-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 16px;
+}
+.page-title {
+  font-family: var(--serif);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.page-subtitle {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: all var(--transition);
+}
+.btn-primary { background: var(--ink); color: #fff; border: 1px solid var(--ink); }
+.btn-primary:hover { background: var(--green); border-color: var(--green); box-shadow: 0 4px 16px rgba(14,159,107,0.25); }
+.btn-secondary {
+  background: var(--paper-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line-2);
+}
+.btn-secondary:hover { background: var(--paper-3); border-color: var(--line-2); }
+.btn-ghost { color: var(--muted); }
+.btn-ghost:hover { background: var(--paper-3); color: var(--ink); }
+.btn-danger { background: var(--red-soft); color: var(--red); border: 1px solid rgba(192,57,43,0.2); }
+.btn-danger:hover { opacity: 0.8; }
+.btn-sm { padding: 5px 12px; font-size: 10.5px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+}
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 18px;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── KPI Grid ────────────────────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.kpi-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+  position: relative;
+  overflow: hidden;
+}
+.kpi-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--blue));
+  opacity: 0.35;
+}
+.kpi-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.kpi-value {
+  font-family: var(--serif);
+  font-size: clamp(26px,2.2vw,36px);
+  font-weight: 400;
+  line-height: 1.1;
+  margin-top: 8px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+.kpi-sub {
+  font-size: var(--text-xs);
+  font-family: var(--mono);
+  color: var(--muted-2);
+  margin-top: 4px;
+  letter-spacing: 0.06em;
+}
+.kpi-trend-up { color: var(--green); }
+.kpi-trend-dn { color: var(--red); }
+
+/* ── Rules Table ─────────────────────────────────────────────── */
+.rules-table { width:100%; border-collapse:collapse; }
+.rules-table th {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  padding: 10px 16px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-2);
+}
+.rules-table td {
+  padding: 12px 16px;
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.rules-table tr:last-child td { border-bottom: none; }
+.rules-table tr:hover td { background: var(--paper-2); }
+.rule-name { font-weight: 500; color: var(--ink); }
+.rule-name small {
+  display: block; font-weight: 400;
+  color: var(--muted); font-size: 11px;
+  margin-top: 2px; font-family: var(--mono);
+}
+
+/* ── Badges ──────────────────────────────────────────────────── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-block     { background:var(--red-soft);    color:var(--red);    border:1px solid rgba(192,57,43,0.18); }
+.badge-redact    { background:var(--amber-soft);  color:var(--amber);  border:1px solid rgba(150,66,25,0.18); }
+.badge-quarantine{ background:var(--orange-soft); color:var(--orange); border:1px solid rgba(218,113,1,0.18); }
+.badge-allow     { background:var(--green-soft);  color:var(--green);  border:1px solid rgba(14,159,107,0.18); }
+.badge-describe  { background:var(--blue-soft);   color:var(--blue);   border:1px solid rgba(43,91,215,0.18); }
+.badge-pattern   { background:var(--green-soft);  color:var(--green);  border:1px solid rgba(14,159,107,0.18); }
+.badge-examples  { background:var(--purple-soft); color:var(--purple); border:1px solid rgba(122,57,187,0.18); }
+
+/* ── Threshold Bar ───────────────────────────────────────────── */
+.threshold-bar { display:flex; align-items:center; gap:8px; }
+.threshold-track {
+  flex:1; height:3px;
+  background: var(--line);
+  border-radius: var(--radius-full);
+  overflow: hidden; min-width: 60px;
+}
+.threshold-fill {
+  height:100%; border-radius:var(--radius-full);
+  background: linear-gradient(90deg, var(--green), var(--blue));
+  transition: width 0.4s ease;
+}
+.threshold-val {
+  font-family: var(--mono);
+  font-size: var(--text-xs); color:var(--muted);
+  min-width: 30px;
+}
+
+/* ── Policy Input ────────────────────────────────────────────── */
+.policy-input-wrap {
+  background: var(--paper);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+.policy-input-label {
+  padding: 14px 20px 6px;
+  font-family: var(--mono);
+  font-size: 10.5px; font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.12em;
+}
+.policy-textarea {
+  width: 100%; min-height: 110px;
+  padding: 8px 20px;
+  font-size: var(--text-base);
+  background: transparent; border: none; outline: none;
+  resize: vertical; line-height: 1.65;
+  color: var(--ink); font-family: var(--sans);
+}
+.policy-input-footer {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+  gap: 12px;
+  background: var(--paper-2);
+}
+.input-hints { display:flex; gap:8px; flex-wrap:wrap; }
+.hint-chip {
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  background: var(--paper);
+  color: var(--muted);
+  cursor: pointer;
+  border: 1px solid var(--line);
+  letter-spacing: 0.06em;
+}
+.hint-chip:hover { background:var(--green-soft); color:var(--green); border-color:rgba(14,159,107,0.3); }
+
+/* ── Preview Panel ───────────────────────────────────────────── */
+.preview-panel {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.preview-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+.preview-tab {
+  padding: 10px 20px;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.preview-tab.active { color:var(--green); border-bottom-color:var(--green); font-weight:600; }
+.preview-body { padding: 20px; }
+.preview-tab-content { display:none; }
+.preview-tab-content.active { display:block; }
+.yaml-block {
+  background: var(--paper-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  line-height: 1.75;
+  overflow-x: auto;
+  color: var(--ink-2);
+}
+.yaml-key   { color: var(--blue); }
+.yaml-str   { color: var(--green-deep); }
+.yaml-num   { color: var(--orange); }
+.yaml-kw    { color: var(--purple); }
+.yaml-comment { color: var(--muted-2); }
+
+/* ── Alerts ──────────────────────────────────────────────────── */
+.alert {
+  display: flex; gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  border: 1px solid;
+}
+.alert-warn  { background:var(--amber-soft);  border-color:rgba(150,66,25,0.2);  color:var(--amber); }
+.alert-info  { background:var(--blue-soft);   border-color:rgba(43,91,215,0.2);  color:var(--blue); }
+.alert-success{ background:var(--green-soft); border-color:rgba(14,159,107,0.2); color:var(--green-deep); }
+.alert-error { background:var(--red-soft);    border-color:rgba(192,57,43,0.2);  color:var(--red); }
+.alert-icon  { flex-shrink:0; margin-top:2px; }
+
+/* ── Nodes Grid ──────────────────────────────────────────────── */
+.nodes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+.node-card {
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+.node-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.node-name { font-weight:600; font-size:var(--text-sm); color:var(--ink); }
+.node-meta { font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:2px; }
+.node-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.node-stat { background:var(--paper-3); border-radius:var(--radius-sm); padding:8px 12px; }
+.node-stat-label { font-family:var(--mono); font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.1em; }
+.node-stat-val { font-family:var(--mono); font-size:var(--text-sm); font-weight:600; color:var(--ink); margin-top:2px; }
+
+/* ── History ─────────────────────────────────────────────────── */
+.history-list { display:flex; flex-direction:column; gap:0; }
+.history-item { display:flex; gap:16px; padding:16px 0; border-bottom:1px solid var(--line); }
+.history-item:last-child { border-bottom:none; }
+.history-dot-col { display:flex; flex-direction:column; align-items:center; gap:0; padding-top:4px; }
+.history-dot { width:9px; height:9px; border-radius:50%; background:var(--green); flex-shrink:0; }
+.history-line { width:1px; flex:1; background:var(--line); margin-top:4px; }
+.history-item:last-child .history-line { display:none; }
+.history-body { flex:1; }
+.history-action { font-size:var(--text-sm); font-weight:500; color:var(--ink); }
+.history-meta { font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:2px; }
+.history-hash {
+  font-family:var(--mono); font-size:10.5px;
+  color:var(--green); background:var(--green-soft);
+  padding:1px 7px; border-radius:var(--radius-sm);
+  border:1px solid rgba(14,159,107,0.2);
+}
+
+/* ── Audit Log ───────────────────────────────────────────────── */
+.audit-table { width:100%; border-collapse:collapse; font-size:var(--text-xs); }
+.audit-table th {
+  font-family:var(--mono); font-weight:600; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.10em;
+  padding:8px 14px; text-align:left;
+  border-bottom:1px solid var(--line);
+  background:var(--paper-2);
+}
+.audit-table td {
+  padding:8px 14px; border-bottom:1px solid var(--line);
+  font-family:var(--mono);
+}
+.audit-table tr:hover td { background:var(--paper-2); }
+.audit-block     { color:var(--red); }
+.audit-allow     { color:var(--green); }
+.audit-quarantine{ color:var(--orange); }
+.audit-redact    { color:var(--amber); }
+
+/* ── Modal ───────────────────────────────────────────────────── */
+.modal-backdrop {
+  position:fixed; inset:0;
+  background:rgba(11,16,32,0.45);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  z-index:200;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; pointer-events:none;
+  transition:opacity var(--transition);
+}
+.modal-backdrop.open { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:var(--radius-xl);
+  padding:36px;
+  width:min(560px,95vw);
+  box-shadow:var(--shadow-lg);
+  transform:translateY(10px) scale(0.98);
+  transition:transform var(--transition);
+  position:relative;
+}
+.modal::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg, transparent, var(--green), var(--blue), transparent);
+  opacity:0.6;
+  border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+}
+.modal-backdrop.open .modal { transform:translateY(0) scale(1); }
+.modal-title {
+  font-family:var(--serif);
+  font-size:var(--text-lg);
+  font-weight:400;
+  margin-bottom:6px;
+  color:var(--ink);
+}
+.modal-sub { font-size:var(--text-sm); color:var(--muted); margin-bottom:28px; font-family:var(--mono); }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:28px; }
+
+/* ── Forms ───────────────────────────────────────────────────── */
+.form-group { margin-bottom:18px; }
+.form-label { font-family:var(--mono); font-size:10.5px; font-weight:600; display:block; margin-bottom:8px; color:var(--muted); text-transform:uppercase; letter-spacing:0.10em; }
+.form-input {
+  width:100%; padding:9px 12px;
+  border:1px solid var(--line-2);
+  border-radius:var(--radius-md);
+  background:var(--paper-2);
+  font-size:var(--text-sm); color:var(--ink);
+  transition:border-color var(--transition),box-shadow var(--transition);
+}
+.form-input:focus {
+  border-color:var(--green);
+  box-shadow:0 0 0 3px var(--green-soft);
+  outline:none; background:var(--paper);
+}
+.form-select {
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7388' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  padding-right:32px;
+}
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+
+/* ── Toggle ──────────────────────────────────────────────────── */
+.toggle { position:relative; display:inline-block; width:36px; height:20px; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider {
+  position:absolute; cursor:pointer; inset:0;
+  background:var(--line-2); border-radius:var(--radius-full);
+  transition:var(--transition);
+}
+.toggle-slider::before {
+  content:''; position:absolute;
+  width:14px; height:14px; left:3px; top:3px;
+  background:#fff; border-radius:50%;
+  transition:var(--transition);
+}
+.toggle input:checked+.toggle-slider { background:var(--green); }
+.toggle input:checked+.toggle-slider::before { transform:translateX(16px); }
+
+/* ── Deploy Progress ─────────────────────────────────────────── */
+.deploy-progress { display:flex; flex-direction:column; gap:12px; }
+.deploy-step { display:flex; align-items:center; gap:12px; font-size:var(--text-sm); }
+.deploy-step-icon {
+  width:24px; height:24px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; font-size:11px;
+}
+.deploy-step-icon.done { background:var(--green-soft); color:var(--green); border:1px solid rgba(14,159,107,0.3); }
+.deploy-step-icon.running { background:var(--blue-soft); border:1px solid rgba(43,91,215,0.3); }
+.deploy-step-icon.pending { background:var(--paper-3); color:var(--muted-2); border:1px solid var(--line); }
+
+/* ── Spinner ─────────────────────────────────────────────────── */
+@keyframes spin { to { transform:rotate(360deg); } }
+.spinner {
+  width:16px; height:16px;
+  border:2px solid var(--line-2);
+  border-top-color:var(--green);
+  border-radius:50%;
+  animation:spin 0.6s linear infinite;
+  display:inline-block;
+}
+
+/* ── Empty State ─────────────────────────────────────────────── */
+.empty-state {
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; padding:64px 32px; color:var(--muted);
+}
+.empty-state h3 { color:var(--ink); font-size:var(--text-base); margin-bottom:8px; font-family:var(--serif); font-weight:400; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width:900px) {
+  .app-shell { grid-template-columns:1fr; }
+  .sidebar { display:none; }
+  .kpi-grid { grid-template-columns:1fr 1fr; }
+}
+@media (max-width:600px) {
+  .kpi-grid { grid-template-columns:1fr; }
+  .main-content { padding:20px 16px; }
+  .form-row { grid-template-columns:1fr; }
+}
+
+/* ── Legacy token aliases (for JS-generated inline styles) ── */
+:root {
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  --color-bg:            var(--paper);
+  --color-surface:       var(--paper-2);
+  --color-surface-2:     var(--paper-3);
+  --color-surface-offset:var(--paper-3);
+  --color-divider:       var(--line);
+  --color-border:        var(--line-2);
+  --color-text:          var(--ink);
+  --color-text-muted:    var(--muted);
+  --color-text-faint:    var(--muted-2);
+  --color-primary:       var(--green);
+  --color-primary-hover: var(--green-deep);
+  --color-primary-hl:    rgba(14,159,107,0.10);
+  --color-error:         var(--red);
+  --color-error-hl:      rgba(192,57,43,0.10);
+  --color-warning:       var(--amber);
+  --color-warning-hl:    rgba(150,66,25,0.10);
+  --color-success:       #437a22;
+  --color-success-hl:    rgba(67,122,34,0.12);
+  --color-orange:        var(--orange);
+  --color-purple:        var(--purple);
+  --color-orange-hl:     var(--orange-soft);
+  --color-purple-hl:     var(--purple-soft);
+
+  --font-body:  var(--sans);
+  --font-mono:  var(--mono);
+
+  --radius-sm:   3px;
+  --radius-md:   5px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(11,16,32,0.06);
+  --shadow-md: 0 4px 16px rgba(11,16,32,0.08);
+  --shadow-lg: 0 16px 48px rgba(11,16,32,0.12);
+
+  --transition: 160ms cubic-bezier(0.16,1,0.3,1);
+}
+
+/* ── Badge override: compact, precise, no pill ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Recent activity row: tighter, more precise */
+#recent-activity > div {
+  padding: 10px 0 !important;
+  gap: 12px !important;
+}
+#recent-activity .badge {
+  min-width: 64px !important;
+  justify-content: center;
+}
+
+/* ── Page section internal spacing ── */
+.page-section.active > * + * { margin-top: 20px; }
+.page-section.active .page-header { margin-bottom: 4px; }
+</style>
+
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar">
+    <div class="logo">
+        <a href="index.html" class="vigilio-logo-wrap" aria-label="Vigilio home">
+          <span class="logo-hex" aria-hidden="true">
+            <span class="outer"></span>
+            <span class="inner"></span>
+            <span class="core"></span>
+          </span>
+          <span class="v-name">vigilio</span>
+          <span class="v-sep">DLP Policy Studio</span>
+        </a>
+      </div>
+      <div class="node-status">
+      <div class="node-dot"></div>
+      <span id="nodes-count">6 Nodes Online</span>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" onclick="openDeployModal()" title="Deploy policies" aria-label="Deploy">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16.5 12 21l5-4.5M12 3v14"/><path d="M3 8l9-5 9 5"/></svg>
+      </button>
+      
+    </div>
+  </header>
+
+  <!-- ══ SIDEBAR ══ -->
+  <nav class="sidebar" aria-label="Main navigation">
+    <span class="nav-section">Main</span>
+    <div class="nav-item active" onclick="navigate('overview')" data-page="overview">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </div>
+    <div class="nav-item" onclick="navigate('policy')" data-page="policy">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Policy Rules
+    </div>
+    <div class="nav-item" onclick="navigate('add-rule')" data-page="add-rule">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+      Add Rule
+    </div>
+    <span class="nav-section">Infrastructure</span>
+    <div class="nav-item" onclick="navigate('nodes')" data-page="nodes">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Nodes
+    </div>
+    <div class="nav-item" onclick="navigate('audit')" data-page="audit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Audit Log
+    </div>
+    <div class="nav-item" onclick="navigate('history')" data-page="history">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+    </div>
+
+    <div class="nav-spacer"></div>
+    <div class="nav-item" onclick="navigate('settings')" data-page="settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </div>
+  
+  </nav>
+
+  <!-- ══ MAIN CONTENT ══ -->
+  <main class="main-content">
+
+    <!-- ── OVERVIEW ── -->
+    <section class="page-section active" id="page-overview">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Overview</h1>
+          <p class="page-subtitle">即時偵測統計與系統健康狀態</p>
+        </div>
+        <button class="btn btn-secondary" onclick="refreshStats()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          Refresh
+        </button>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Today's Prompts</div>
+          <div class="kpi-value" id="kpi-total">84,312</div>
+          <div class="kpi-sub kpi-trend-up">↑ 12% vs yesterday</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Blocked</div>
+          <div class="kpi-value kpi-trend-dn" id="kpi-blocked">1,247</div>
+          <div class="kpi-sub">1.48% block rate</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Avg Latency</div>
+          <div class="kpi-value" id="kpi-latency">9.3ms</div>
+          <div class="kpi-sub">DLP overhead only</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Rules</div>
+          <div class="kpi-value" id="kpi-rules">8</div>
+          <div class="kpi-sub">Across 6 nodes</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Top Triggered Rules (Today)</span>
+          </div>
+          <div id="top-rules-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Activity</span>
+          </div>
+          <div id="recent-activity"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── POLICY RULES ── -->
+    <section class="page-section" id="page-policy">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Policy Rules</h1>
+          <p class="page-subtitle">管理所有 governance.yaml 偵測規則</p>
+        </div>
+        <button class="btn btn-primary" onclick="navigate('add-rule')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add Rule
+        </button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="rules-table">
+          <thead>
+            <tr>
+              <th>Rule Name</th>
+              <th>Type</th>
+              <th>Action</th>
+              <th>Threshold</th>
+              <th>Scope</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="rules-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── ADD RULE ── -->
+    <section class="page-section" id="page-add-rule">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Add Rule</h1>
+          <p class="page-subtitle">使用自然語言描述新偵測規則</p>
+        </div>
+      </div>
+      <div class="policy-input-wrap">
+        <div class="policy-input-label">自然語言輸入</div>
+        <textarea class="policy-textarea" id="nl-input" placeholder="例如：封鎖包含 TSMC N3 製程節點規格或 EUV 曝光參數的 prompt，敏感度設為 0.88，僅限研發部門..." rows="5"></textarea>
+        <div class="policy-input-footer">
+          <div class="input-hints">
+            <span class="hint-chip" onclick="fillHint(0)">IC 設計 IP</span>
+            <span class="hint-chip" onclick="fillHint(1)">財務機密</span>
+            <span class="hint-chip" onclick="fillHint(2)">API 憑證</span>
+            <span class="hint-chip" onclick="fillHint(3)">製程配方</span>
+            <span class="hint-chip" onclick="fillHint(4)">客戶 NDA</span>
+            <span class="hint-chip" onclick="fillHint(5)">程式碼審核</span>
+          </div>
+          <button class="btn btn-primary" onclick="analyzeInput()" id="analyze-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            Analyze
+          </button>
+        </div>
+      </div>
+
+      <div id="preview-container" style="display:none;">
+        <div id="conflict-alerts" style="display:flex;flex-direction:column;gap:var(--space-3);"></div>
+
+        <div class="preview-panel">
+          <div class="preview-tabs">
+            <div class="preview-tab active" onclick="switchPreviewTab('summary',this)">Summary</div>
+            <div class="preview-tab" onclick="switchPreviewTab('yaml',this)">YAML Preview</div>
+            <div class="preview-tab" onclick="switchPreviewTab('edit',this)">Manual Edit</div>
+          </div>
+          <div class="preview-body">
+            <div class="preview-tab-content active" id="preview-summary"></div>
+            <div class="preview-tab-content" id="preview-yaml"></div>
+            <div class="preview-tab-content" id="preview-edit"></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:var(--space-3);justify-content:flex-end;">
+          <button class="btn btn-secondary" onclick="resetPreview()">Discard</button>
+          <button class="btn btn-primary" onclick="commitRule()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            Confirm & Deploy
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── NODES ── -->
+    <section class="page-section" id="page-nodes">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Nodes</h1>
+          <p class="page-subtitle">Proxy node 部署狀態與健康監控</p>
+        </div>
+        <button class="btn btn-secondary" onclick="addNodeModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Add Node
+        </button>
+      </div>
+      <div class="nodes-grid" id="nodes-grid"></div>
+    </section>
+
+    <!-- ── AUDIT LOG ── -->
+    <section class="page-section" id="page-audit">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Audit Log</h1>
+          <p class="page-subtitle">每筆 DLP 攔截事件的稽核記錄</p>
+        </div>
+        <button class="btn btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export CSV
+        </button>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <table class="audit-table">
+          <thead><tr><th>Time</th><th>User</th><th>Rule</th><th>Action</th><th>Node</th><th>Prompt Hash</th></tr></thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── HISTORY ── -->
+    <section class="page-section" id="page-history">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Policy History</h1>
+          <p class="page-subtitle">Git commit 記錄與一鍵回滾</p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="history-list" id="history-list"></div>
+      </div>
+    </section>
+
+    <!-- ── SETTINGS ── -->
+    <section class="page-section" id="page-settings">
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">Settings</h1>
+          <p class="page-subtitle">全域組態與系統參數</p>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);">
+        <div class="card">
+          <div class="card-header"><span class="card-title">DLP Engine</span></div>
+          <div class="form-group">
+            <label class="form-label">Embedding Model</label>
+            <select class="form-input form-select"><option>bge-m3.onnx (570MB) — 推薦</option><option>bge-small.onnx (130MB) — 低資源</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Policy Pull Interval (seconds)</label>
+            <input type="number" class="form-input" value="30" min="5" max="300">
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+            <label class="form-label" style="margin:0;">Layer B Semantic Detection</label>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Control Center</span></div>
+          <div class="form-group">
+            <label class="form-label">Policy API Endpoint</label>
+            <input class="form-input" value="https://dlp.corp.internal/policy">
+          </div>
+          <div class="form-group">
+            <label class="form-label">LLM Provider for Policy Extraction</label>
+            <select class="form-input form-select"><option>gpt-4o (Structured Output)</option><option>gpt-4o-mini (Intent Classification)</option></select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;justify-content:space-between;">
+            <label class="form-label" style="margin:0;">SIEM Syslog Push</label>
+            <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;"><button class="btn btn-primary">Save Settings</button></div>
+    </section>
+
+  <footer style="text-align:center; padding: 16px 28px; margin-top: auto; border-top: 1px solid var(--line); flex-shrink: 0;">
+    <span id="site-copyright" style="font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted-2);">© 2026 Vigilio AI Research Lab. All Rights Reserved.</span>
+  </footer>
+
+  </main>
+</div>
+
+<!-- ══ DEPLOY MODAL ══ -->
+<div class="modal-backdrop" id="deploy-modal">
+  <div class="modal">
+    <h2 class="modal-title">Deploy to All Nodes</h2>
+    <p class="modal-sub">將最新 governance.yaml 打包並推送至所有 Proxy Node。</p>
+    <div class="deploy-progress" id="deploy-progress"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('deploy-modal')">Close</button>
+      <button class="btn btn-primary" id="deploy-start-btn" onclick="startDeploy()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Start Deploy
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADD NODE MODAL ══ -->
+<div class="modal-backdrop" id="add-node-modal">
+  <div class="modal">
+    <h2 class="modal-title">Add New Node</h2>
+    <p class="modal-sub">新節點將透過 SSH 安裝 Envoy + libdlp.so。</p>
+    <div class="form-group"><label class="form-label">Node Hostname / IP</label><input class="form-input" placeholder="proxy-node-07.corp.internal"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">SSH User</label><input class="form-input" value="dlp-deploy"></div>
+      <div class="form-group"><label class="form-label">Region</label><select class="form-input form-select"><option>TPE-DC1</option><option>TPE-DC2</option><option>SIN-DC1</option></select></div>
+    </div>
+    <div class="alert alert-info" style="margin-top:var(--space-2);">
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <span>安裝腳本：<code style="font-family:var(--font-mono)">curl -fsSL https://dlp.corp.internal/install.sh | bash -s -- --node-id &lt;hostname&gt;</code></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('add-node-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="provisionNode()">Provision Node</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ROLLBACK MODAL ══ -->
+<div class="modal-backdrop" id="rollback-modal">
+  <div class="modal">
+    <h2 class="modal-title">Rollback Policy</h2>
+    <p class="modal-sub" id="rollback-desc"></p>
+    <div class="alert alert-warn">
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      回滾將覆蓋目前所有 Node 的政策。操作無法還原（但可再次 deploy 最新版）。
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('rollback-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmRollback()">Rollback</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+// ── Data Store ────────────────────────────────────────────────────
+const RULES = [
+  {id:1,name:'IC 設計 IP',desc:'包含晶片電路設計、RTL 描述、netlist、製程節點規格',type:'describe',action:'block',threshold:0.85,scope:'全公司',enabled:true,hits:532},
+  {id:2,name:'製程配方',desc:'蝕刻速率、CVD 腔體壓力、CMP 研磨參數',type:'examples',action:'block',threshold:0.82,scope:'研發部',enabled:true,hits:218},
+  {id:3,name:'API 憑證',desc:'AKIA keys, JWT tokens, Private Keys',type:'pattern',action:'block',threshold:null,scope:'全公司',enabled:true,hits:441},
+  {id:4,name:'財務機密',desc:'未公開財務數字、EPS 預測、M&A 計畫',type:'describe',action:'block',threshold:0.88,scope:'Finance,Legal',enabled:true,hits:104},
+  {id:5,name:'大量程式碼',desc:'超過 20 行的完整程式碼片段',type:'describe',action:'quarantine',threshold:0.75,scope:'全公司',enabled:true,hits:287},
+  {id:6,name:'客戶 NDA',desc:'客戶合約保密條款、合約範本、商業機密條文',type:'describe',action:'block',threshold:0.86,scope:'Legal,Sales',enabled:true,hits:76},
+  {id:7,name:'個資',desc:'身份證字號、護照、信用卡號碼',type:'pattern',action:'redact',threshold:null,scope:'全公司',enabled:true,hits:63},
+  {id:8,name:'SPICE Netlist',desc:'.subckt / .ends / .model 電路描述',type:'pattern',action:'block',threshold:null,scope:'研發部',enabled:false,hits:18},
+];
+
+const NODES = [
+  {id:'proxy-01',region:'TPE-DC1',ip:'10.0.1.11',version:'a3f2c1b',uptime:'14d 6h',latency:'7.2ms',blocked:612,online:true},
+  {id:'proxy-02',region:'TPE-DC1',ip:'10.0.1.12',version:'a3f2c1b',uptime:'14d 5h',latency:'8.1ms',blocked:589,online:true},
+  {id:'proxy-03',region:'TPE-DC2',ip:'10.0.2.11',version:'a3f2c1b',uptime:'9d 2h',latency:'9.4ms',blocked:201,online:true},
+  {id:'proxy-04',region:'TPE-DC2',ip:'10.0.2.12',version:'a3f2c1b',uptime:'9d 1h',latency:'10.2ms',blocked:198,online:true},
+  {id:'proxy-05',region:'SIN-DC1',ip:'10.1.1.11',version:'a3f2c1b',uptime:'3d 11h',latency:'11.8ms',blocked:87,online:true},
+  {id:'proxy-06',region:'SIN-DC1',ip:'10.1.1.12',version:'b1d0a9f',uptime:'1d 4h',latency:'12.4ms',blocked:24,online:false},
+];
+
+const HISTORY = [
+  {hash:'a3f2c1b',msg:'Add rule: IC 設計 IP (describe, block)',author:'john.doe@corp',time:'2026-05-02 09:41',can_rollback:true},
+  {hash:'9e1b4a2',msg:'Update threshold: 財務機密 0.85 → 0.88',author:'sarah.lee@corp',time:'2026-05-01 16:22',can_rollback:true},
+  {hash:'7c3d8f1',msg:'Add rule: SPICE Netlist (pattern, block)',author:'admin@corp',time:'2026-04-30 11:05',can_rollback:true},
+  {hash:'5f2a0e9',msg:'Add rule: 大量程式碼 (describe, quarantine)',author:'john.doe@corp',time:'2026-04-28 14:38',can_rollback:true},
+  {hash:'3b8c6d4',msg:'Initial policy: API 憑證, 財務機密, 客戶 NDA',author:'admin@corp',time:'2026-04-25 09:00',can_rollback:false},
+];
+
+const AUDIT_EVENTS = [
+  {time:'10:54:02','user':'alice@corp',rule:'IC 設計 IP',action:'block',node:'proxy-01',hash:'7a3b9c2d'},
+  {time:'10:53:44',user:'bob@corp',rule:'API 憑證',action:'block',node:'proxy-02',hash:'1f8e4a6b'},
+  {time:'10:53:12',user:'carol@corp',rule:'大量程式碼',action:'quarantine',node:'proxy-01',hash:'d2c7f3a1'},
+  {time:'10:52:58',user:'dave@corp',rule:'個資',action:'redact',node:'proxy-03',hash:'9e5b2d8c'},
+  {time:'10:52:31',user:'eve@corp',rule:'製程配方',action:'block',node:'proxy-02',hash:'4a7f1e9d'},
+  {time:'10:51:48',user:'frank@corp',rule:'財務機密',action:'block',node:'proxy-04',hash:'c3b6a2f8'},
+  {time:'10:51:22',user:'grace@corp',rule:'IC 設計 IP',action:'block',node:'proxy-01',hash:'8d1c4e7a'},
+  {time:'10:50:55',user:'henry@corp',rule:'客戶 NDA',action:'block',node:'proxy-05',hash:'2f9b3d6c'},
+  {time:'10:50:29',user:'iris@corp',rule:'API 憑證',action:'block',node:'proxy-02',hash:'6e4a8b1f'},
+  {time:'10:50:01',user:'jack@corp',rule:'SPICE Netlist',action:'block',node:'proxy-01',hash:'a5c2d9e3'},
+];
+
+const HINTS = [
+  '封鎖所有包含晶片電路 RTL 描述、netlist 或 Verilog 程式碼的 prompt，敏感度 0.87',
+  '封鎖財務相關機密，包括未公開 EPS 預測、季度業績和 M&A 計畫，僅限 Finance 和 Legal 部門，敏感度 0.88',
+  '攔截所有 AWS Access Key（AKIA...）、JWT Token 和 Private Key 格式的內容，直接 block',
+  '封鎖包含半導體製程配方的內容，例如蝕刻速率、CVD 壓力參數、CMP 研磨設定，研發部門，敏感度 0.82',
+  '封鎖客戶 NDA 合約內容、保密條款文字和商業機密描述，Legal 和 Sales，敏感度 0.86',
+  '大量程式碼片段（超過 20 行）送人工審核，不直接擋，敏感度 0.75',
+];
+
+// ── Navigation ────────────────────────────────────────────────────
+function navigate(page) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const section = document.getElementById('page-' + page);
+  if (section) section.classList.add('active');
+  const navItem = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (navItem) navItem.classList.add('active');
+}
+
+// ── Theme Toggle ──────────────────────────────────────────────────
+// Theme: light-only
+
+// ── Render Rules Table ────────────────────────────────────────────
+function renderRules() {
+  const tbody = document.getElementById('rules-tbody');
+  tbody.innerHTML = RULES.map(r => `
+    <tr>
+      <td><div class="rule-name">${r.name}<small>${r.desc.substring(0,45)}...</small></div></td>
+      <td><span class="badge badge-${r.type}">${r.type}</span></td>
+      <td><span class="badge badge-${r.action}">${r.action}</span></td>
+      <td>
+        ${r.threshold ? `<div class="threshold-bar">
+          <div class="threshold-track"><div class="threshold-fill" style="width:${r.threshold*100}%"></div></div>
+          <span class="threshold-val">${r.threshold}</span>
+        </div>` : '<span style="color:var(--color-text-faint);font-size:var(--text-xs)">N/A (pattern)</span>'}
+      </td>
+      <td style="font-size:var(--text-xs);color:var(--color-text-muted)">${r.scope}</td>
+      <td>
+        <label class="toggle"><input type="checkbox" ${r.enabled?'checked':''} onchange="toggleRule(${r.id},this.checked)"><span class="toggle-slider"></span></label>
+      </td>
+      <td>
+        <div style="display:flex;gap:var(--space-1)">
+          <button class="btn btn-ghost btn-sm" onclick="editRule(${r.id})">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteRule(${r.id})">Del</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleRule(id, val) {
+  const r = RULES.find(x => x.id === id);
+  if (r) r.enabled = val;
+}
+function editRule(id) { navigate('add-rule'); }
+function deleteRule(id) {
+  if (confirm('確定要刪除此規則？')) {
+    const idx = RULES.findIndex(x => x.id === id);
+    if (idx > -1) { RULES.splice(idx, 1); renderRules(); }
+  }
+}
+
+// ── Render Nodes ──────────────────────────────────────────────────
+function renderNodes() {
+  const grid = document.getElementById('nodes-grid');
+  grid.innerHTML = NODES.map(n => `
+    <div class="node-card">
+      <div class="node-card-header">
+        <div>
+          <div class="node-name">${n.id}</div>
+          <div class="node-meta">${n.region} · ${n.ip}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-2)">
+          <div class="node-dot" style="background:${n.online?'var(--color-success)':'var(--color-error)'};box-shadow:0 0 6px ${n.online?'var(--color-success)':'var(--color-error)'}"></div>
+          <span style="font-size:var(--text-xs);color:var(--color-text-muted)">${n.online?'Online':'Degraded'}</span>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-2)">
+        <span class="badge badge-describe" style="font-size:10px">commit ${n.version}</span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-muted)">up ${n.uptime}</span>
+      </div>
+      <div class="node-stats">
+        <div class="node-stat"><div class="node-stat-label">DLP Latency</div><div class="node-stat-val">${n.latency}</div></div>
+        <div class="node-stat"><div class="node-stat-label">Blocked Today</div><div class="node-stat-val">${n.blocked}</div></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Render Audit ──────────────────────────────────────────────────
+function renderAudit() {
+  const tbody = document.getElementById('audit-tbody');
+  tbody.innerHTML = AUDIT_EVENTS.map(e => `
+    <tr>
+      <td>${e.time}</td>
+      <td>${e.user}</td>
+      <td>${e.rule}</td>
+      <td><span class="badge badge-${e.action} audit-${e.action}">${e.action}</span></td>
+      <td>${e.node}</td>
+      <td style="color:var(--color-text-faint)">${e.hash}</td>
+    </tr>
+  `).join('');
+}
+
+// ── Render History ────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  list.innerHTML = HISTORY.map(h => `
+    <div class="history-item">
+      <div class="history-dot-col">
+        <div class="history-dot"></div>
+        <div class="history-line"></div>
+      </div>
+      <div class="history-body">
+        <div style="display:flex;align-items:center;gap:var(--space-2);flex-wrap:wrap">
+          <span class="history-hash">${h.hash}</span>
+          <span class="history-action">${h.msg}</span>
+        </div>
+        <div class="history-meta">${h.author} · ${h.time}</div>
+      </div>
+      ${h.can_rollback ? `<button class="btn btn-secondary btn-sm" onclick="openRollback('${h.hash}','${h.msg}')">Rollback</button>` : ''}
+    </div>
+  `).join('');
+}
+
+// ── Render Overview ───────────────────────────────────────────────
+function renderOverview() {
+  const topRules = document.getElementById('top-rules-list');
+  const sorted = [...RULES].sort((a,b)=>b.hits-a.hits).slice(0,5);
+  const max = sorted[0].hits;
+  topRules.innerHTML = sorted.map(r => `
+    <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3)">
+      <span style="min-width:120px;font-size:var(--text-xs);font-weight:500">${r.name}</span>
+      <div style="flex:1;height:6px;background:var(--color-divider);border-radius:var(--radius-full);overflow:hidden">
+        <div style="width:${(r.hits/max)*100}%;height:100%;background:var(--color-primary);border-radius:var(--radius-full)"></div>
+      </div>
+      <span style="min-width:36px;font-size:var(--text-xs);text-align:right;font-variant-numeric:tabular-nums;color:var(--color-text-muted)">${r.hits}</span>
+    </div>
+  `).join('');
+
+  const recent = document.getElementById('recent-activity');
+  recent.innerHTML = AUDIT_EVENTS.slice(0,5).map(e => `
+    <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:1px solid var(--color-divider)">
+      <span class="badge badge-${e.action}" style="min-width:72px;justify-content:center">${e.action}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:var(--text-xs);font-weight:500">${e.rule}</div>
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted)">${e.user}</div>
+      </div>
+      <span style="font-size:var(--text-xs);color:var(--color-text-faint)">${e.time}</span>
+    </div>
+  `).join('');
+}
+
+// ── Refresh Stats (animated) ──────────────────────────────────────
+function refreshStats() {
+  const kpis = ['kpi-total','kpi-blocked','kpi-latency','kpi-rules'];
+  kpis.forEach(id => {
+    const el = document.getElementById(id);
+    el.style.opacity = '0.3';
+    setTimeout(() => { el.style.opacity = '1'; el.style.transition = 'opacity 0.4s'; }, 400);
+  });
+}
+
+// ── NL Input Hints ────────────────────────────────────────────────
+function fillHint(i) {
+  document.getElementById('nl-input').value = HINTS[i];
+  document.getElementById('preview-container').style.display = 'none';
+}
+
+// ── Analyze Input ─────────────────────────────────────────────────
+function analyzeInput() {
+  const input = document.getElementById('nl-input').value.trim();
+  if (!input) return;
+  const btn = document.getElementById('analyze-btn');
+  btn.innerHTML = '<div class="spinner"></div> Analyzing...';
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg> Analyze';
+    btn.disabled = false;
+    showPreview(input);
+  }, 1600);
+}
+
+function showPreview(input) {
+  const lower = input.toLowerCase();
+  let type = 'describe', action = 'block', threshold = 0.85, scope = '全公司', name = '新規則';
+
+  if (lower.includes('pattern') || lower.includes('api') || lower.includes('key') || lower.includes('jwt')) { type = 'pattern'; threshold = null; }
+  else if (lower.includes('範例') || lower.includes('example')) type = 'examples';
+  if (lower.includes('quarantine') || lower.includes('人工') || lower.includes('審核')) action = 'quarantine';
+  if (lower.includes('redact') || lower.includes('遮除')) action = 'redact';
+  if (lower.includes('ic') || lower.includes('晶片') || lower.includes('rtl')) name = 'IC 設計 IP';
+  else if (lower.includes('財務') || lower.includes('eps') || lower.includes('finance')) { name = '財務機密'; scope = 'Finance,Legal'; threshold = 0.88; }
+  else if (lower.includes('製程') || lower.includes('cvd') || lower.includes('蝕刻')) { name = '製程配方'; scope = '研發部'; threshold = 0.82; }
+  else if (lower.includes('api') || lower.includes('key') || lower.includes('jwt')) name = 'API 憑證';
+  else if (lower.includes('程式碼') || lower.includes('code')) { name = '大量程式碼'; action = 'quarantine'; threshold = 0.75; }
+  else if (lower.includes('nda') || lower.includes('合約') || lower.includes('保密')) { name = '客戶 NDA'; scope = 'Legal,Sales'; threshold = 0.86; }
+  if (lower.includes('0.8')) {
+    const m = input.match(/0\.\d{2}/);
+    if (m) threshold = parseFloat(m[0]);
+  }
+
+  // Check conflicts
+  const conflicts = RULES.filter(r => r.name.toLowerCase() === name.toLowerCase());
+  const container = document.getElementById('conflict-alerts');
+  container.innerHTML = '';
+  if (conflicts.length > 0) {
+    container.innerHTML = `<div class="alert alert-warn">
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>⚠️ 偵測到與現有規則「${conflicts[0].name}」可能重複。建議修改現有規則或調整名稱。</span>
+    </div>`;
+  } else {
+    container.innerHTML = `<div class="alert alert-success">
+      <svg class="alert-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>✓ 無衝突規則。語意分析完成，可確認部署。</span>
+    </div>`;
+  }
+
+  // Summary
+  document.getElementById('preview-summary').innerHTML = `
+    <div style="display:grid;gap:var(--space-4)">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
+        <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">Rule Name</div>
+          <div style="font-weight:600">${name}</div>
+        </div>
+        <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">Detector Type</div>
+          <span class="badge badge-${type}">${type}</span>
+        </div>
+        <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">Action</div>
+          <span class="badge badge-${action}">${action}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)">
+        <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">Confidence Threshold</div>
+          <div style="font-weight:600">${threshold !== null ? threshold : 'N/A (pattern-based)'}</div>
+        </div>
+        <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+          <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">Scope</div>
+          <div style="font-weight:600">${scope}</div>
+        </div>
+      </div>
+      <div style="background:var(--color-surface-offset);border-radius:var(--radius-lg);padding:var(--space-4)">
+        <div style="font-size:var(--text-xs);color:var(--color-text-muted);margin-bottom:var(--space-1)">AI Reasoning</div>
+        <div style="font-size:var(--text-sm);color:var(--color-text-muted)">根據輸入語意，識別為「${name}」類型。偵測器類型設為 ${type}，信心閾值 ${threshold ?? 'N/A'} 基於歷史規則配置建議。Scope 限定為 ${scope}。</div>
+      </div>
+    </div>`;
+
+  // YAML
+  const yamlContent = type === 'pattern'
+    ? `<span class="yaml-comment"># governance.yaml — 自動生成預覽</span>\n<span class="yaml-key">rules</span>:\n  - <span class="yaml-key">name</span>: <span class="yaml-str">"${name}"</span>\n    <span class="yaml-key">pattern</span>: <span class="yaml-str">"(AKIA[0-9A-Z]{16}|-----BEGIN .{0,20}PRIVATE KEY-----)"</span>\n    <span class="yaml-key">action</span>: <span class="yaml-kw">${action}</span>`
+    : `<span class="yaml-comment"># governance.yaml — 自動生成預覽</span>\n<span class="yaml-key">rules</span>:\n  - <span class="yaml-key">name</span>: <span class="yaml-str">"${name}"</span>\n    <span class="yaml-key">describe</span>: <span class="yaml-str">"${input.substring(0,80)}..."</span>\n    <span class="yaml-key">action</span>: <span class="yaml-kw">${action}</span>\n    <span class="yaml-key">confidence_threshold</span>: <span class="yaml-num">${threshold}</span>\n    <span class="yaml-key">scope</span>: [<span class="yaml-str">${scope.split(',').map(s=>`"${s.trim()}"`).join(', ')}</span>]\n    <span class="yaml-key">message</span>: <span class="yaml-str">"${name}相關內容，禁止傳送至外部 AI 服務"</span>`;
+  document.getElementById('preview-yaml').innerHTML = `<pre class="yaml-block">${yamlContent}</pre>`;
+
+  // Edit form
+  document.getElementById('preview-edit').innerHTML = `
+    <div class="form-group"><label class="form-label">Rule Name</label><input class="form-input" value="${name}"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Detector Type</label>
+        <select class="form-input form-select">
+          <option ${type==='describe'?'selected':''}>describe</option>
+          <option ${type==='examples'?'selected':''}>examples</option>
+          <option ${type==='pattern'?'selected':''}>pattern</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Action</label>
+        <select class="form-input form-select">
+          <option ${action==='block'?'selected':''}>block</option>
+          <option ${action==='redact'?'selected':''}>redact</option>
+          <option ${action==='quarantine'?'selected':''}>quarantine</option>
+          <option>allow</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Confidence Threshold</label><input class="form-input" type="number" step="0.01" min="0.5" max="0.99" value="${threshold ?? 0.8}"></div>
+      <div class="form-group"><label class="form-label">Scope (comma-separated)</label><input class="form-input" value="${scope}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" rows="3">${input}</textarea></div>`;
+
+  document.getElementById('preview-container').style.display = 'flex';
+  document.getElementById('preview-container').style.flexDirection = 'column';
+  document.getElementById('preview-container').style.gap = 'var(--space-6)';
+
+  // Store for commit
+  window._pendingRule = {id:RULES.length+1,name,type,action,threshold,scope,enabled:true,desc:input.substring(0,50),hits:0};
+}
+
+function switchPreviewTab(tab, el) {
+  document.querySelectorAll('.preview-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.preview-tab-content').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('preview-' + tab).classList.add('active');
+}
+
+function resetPreview() {
+  document.getElementById('preview-container').style.display = 'none';
+  document.getElementById('nl-input').value = '';
+}
+
+function commitRule() {
+  if (window._pendingRule) {
+    RULES.push(window._pendingRule);
+    HISTORY.unshift({hash:Math.random().toString(36).substr(2,7),msg:`Add rule: ${window._pendingRule.name} (${window._pendingRule.type}, ${window._pendingRule.action})`,author:'current.user@corp',time:new Date().toLocaleString('zh-TW'),can_rollback:true});
+    renderRules();
+    renderHistory();
+    renderOverview();
+    document.getElementById('kpi-rules').textContent = RULES.filter(r=>r.enabled).length;
+  }
+  resetPreview();
+  navigate('policy');
+  openDeployModal();
+}
+
+// ── Deploy Modal ──────────────────────────────────────────────────
+function openDeployModal() {
+  const steps = [
+    'nix build .#dlp-filter',
+    'Computing embedding vectors',
+    'nix copy → proxy-01, proxy-02',
+    'nix copy → proxy-03, proxy-04',
+    'nix copy → proxy-05, proxy-06',
+    'Writing /etc/dlp/pending-update',
+    'Hot-swap confirmed on all nodes',
+  ];
+  const prog = document.getElementById('deploy-progress');
+  prog.innerHTML = steps.map((s,i) => `
+    <div class="deploy-step">
+      <div class="deploy-step-icon pending" id="dstep-${i}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="4"/></svg>
+      </div>
+      <span id="dstep-label-${i}" style="color:var(--color-text-faint)">${s}</span>
+    </div>
+  `).join('');
+  document.getElementById('deploy-modal').classList.add('open');
+  document.getElementById('deploy-start-btn').style.display = 'flex';
+}
+
+function startDeploy() {
+  document.getElementById('deploy-start-btn').style.display = 'none';
+  const total = 7;
+  let i = 0;
+  function step() {
+    if (i > 0) {
+      const prev = document.getElementById(`dstep-${i-1}`);
+      prev.className = 'deploy-step-icon done';
+      prev.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>';
+      document.getElementById(`dstep-label-${i-1}`).style.color = 'var(--color-success)';
+    }
+    if (i < total) {
+      const cur = document.getElementById(`dstep-${i}`);
+      cur.className = 'deploy-step-icon running';
+      cur.innerHTML = '<div class="spinner" style="width:12px;height:12px;border-width:2px"></div>';
+      document.getElementById(`dstep-label-${i}`).style.color = 'var(--color-text)';
+      i++;
+      setTimeout(step, i === 1 ? 1200 : i === 2 ? 800 : 400);
+    } else {
+      document.getElementById('deploy-start-btn').style.display = 'none';
+      const btn = document.getElementById('deploy-modal').querySelector('.btn-secondary');
+      btn.textContent = '✓ Done — Close';
+    }
+  }
+  step();
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function addNodeModal() {
+  document.getElementById('add-node-modal').classList.add('open');
+}
+function provisionNode() {
+  closeModal('add-node-modal');
+  alert('✓ Provisioning initiated. Node will appear online within ~5 minutes.');
+}
+
+function openRollback(hash, msg) {
+  document.getElementById('rollback-desc').textContent = `即將回滾至 commit ${hash}：「${msg}」`;
+  document.getElementById('rollback-modal').classList.add('open');
+}
+function confirmRollback() {
+  closeModal('rollback-modal');
+  alert('✓ Rollback initiated. Policy will propagate in ~30s.');
+}
+
+// Close modals on backdrop click
+document.querySelectorAll('.modal-backdrop').forEach(bd => {
+  bd.addEventListener('click', e => { if (e.target === bd) bd.classList.remove('open'); });
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+renderRules();
+renderNodes();
+renderAudit();
+renderHistory();
+renderOverview();
+
+
+// ── Copyright year (never below 2026) ──────────────────────────
+(function() {
+  const el = document.getElementById('site-copyright');
+  if (!el) return;
+  const year = Math.max(new Date().getFullYear(), 2026);
+  el.textContent = '© ' + year + ' Vigilio AI Research Lab.';
+})();
+
+// ── Copyright year ──────────────────────────────────────────────
+(function() {
+  var el = document.getElementById('site-copyright');
+  if (!el) return;
+  var year = Math.max(new Date().getFullYear(), 2026);
+  el.textContent = '© ' + year + ' Vigilio AI Research Lab. All Rights Reserved.';
+})();
+</script>
+</body>
+</html>
