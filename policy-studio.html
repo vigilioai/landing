@@ -799,7 +799,24 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
 .page-section.active .page-header { margin-bottom: 4px; }
 
 .page-section.active { display: block; flex: 1 0 auto; }
-  </style>
+  
+/* ── OWASP Badges ────────────────────────────────────────────── */
+.owasp-badge {
+  display: inline-flex; align-items: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-soft);
+  border: 1px solid rgba(43,91,215,0.2);
+  padding: 1.5px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  margin-left: 6px;
+  transform: translateY(-1px);
+}
+.owasp-badge.llm01 { color: var(--red); background: var(--red-soft); border-color: rgba(192,57,43,0.2); }
+</style>
 </head>
 <body>
 
@@ -923,15 +940,21 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
 
     <!-- ── POLICY RULES ── -->
     <section class="page-section" id="page-policy">
-      <div class="page-header">
+      <div class="page-header" style="align-items: center;">
         <div>
           <h1 class="page-title">Policy Rules</h1>
           <p class="page-subtitle">管理所有 governance.yaml 偵測規則</p>
         </div>
-        <button class="btn btn-primary" onclick="navigate('add-rule')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-          Add Rule
-        </button>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 12px; background:var(--paper-2); border:1px solid var(--line); border-radius:var(--radius-full);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted-2)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span style="font-family:var(--mono); font-size:10px; font-weight:500; letter-spacing:0.06em; color:var(--muted); text-transform:uppercase;">OWASP LLM 2025 Aligned</span>
+          </div>
+          <button class="btn btn-primary" onclick="navigate('add-rule')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+            New Rule
+          </button>
+        </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden;">
         <table class="rules-table">
@@ -1161,14 +1184,14 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
 <script>
 // ── Data Store ────────────────────────────────────────────────────
 const RULES = [
-  {id:1,name:'IC 設計 IP',desc:'包含晶片電路設計、RTL 描述、netlist、製程節點規格',type:'describe',action:'block',threshold:0.85,scope:'全公司',enabled:true,hits:532},
-  {id:2,name:'製程配方',desc:'蝕刻速率、CVD 腔體壓力、CMP 研磨參數',type:'examples',action:'block',threshold:0.82,scope:'研發部',enabled:true,hits:218},
-  {id:3,name:'API 憑證',desc:'AKIA keys, JWT tokens, Private Keys',type:'pattern',action:'block',threshold:null,scope:'全公司',enabled:true,hits:441},
-  {id:4,name:'財務機密',desc:'未公開財務數字、EPS 預測、M&A 計畫',type:'describe',action:'block',threshold:0.88,scope:'Finance,Legal',enabled:true,hits:104},
-  {id:5,name:'大量程式碼',desc:'超過 20 行的完整程式碼片段',type:'describe',action:'quarantine',threshold:0.75,scope:'全公司',enabled:true,hits:287},
-  {id:6,name:'客戶 NDA',desc:'客戶合約保密條款、合約範本、商業機密條文',type:'describe',action:'block',threshold:0.86,scope:'Legal,Sales',enabled:true,hits:76},
-  {id:7,name:'個資',desc:'身份證字號、護照、信用卡號碼',type:'pattern',action:'redact',threshold:null,scope:'全公司',enabled:true,hits:63},
-  {id:8,name:'SPICE Netlist',desc:'.subckt / .ends / .model 電路描述',type:'pattern',action:'block',threshold:null,scope:'研發部',enabled:false,hits:18},
+  {id:1,name:'IC 設計 IP',owasp:['LLM02'],desc:'包含晶片電路設計、RTL 描述、netlist、製程節點規格',type:'describe',action:'block',threshold:0.85,scope:'全公司',enabled:true,hits:532},
+  {id:2,name:'製程配方',owasp:['LLM02'],desc:'蝕刻速率、CVD 腔體壓力、CMP 研磨參數',type:'examples',action:'block',threshold:0.82,scope:'研發部',enabled:true,hits:218},
+  {id:3,name:'API 憑證',owasp:['LLM02','LLM05'],desc:'AKIA keys, JWT tokens, Private Keys',type:'pattern',action:'block',threshold:null,scope:'全公司',enabled:true,hits:441},
+  {id:4,name:'財務機密',owasp:['LLM02'],desc:'未公開財務數字、EPS 預測、M&A 計畫',type:'describe',action:'block',threshold:0.88,scope:'Finance,Legal',enabled:true,hits:104},
+  {id:5,name:'大量程式碼',owasp:['LLM02','LLM05'],desc:'超過 20 行的完整程式碼片段',type:'describe',action:'quarantine',threshold:0.75,scope:'全公司',enabled:true,hits:287},
+  {id:6,name:'System Prompt Jailbreak',owasp:['LLM01'],desc:'系統提示詞注入與越權指令',type:'describe',action:'block',threshold:0.92,scope:'全公司',enabled:true,hits:156},
+  {id:7,name:'個資 (PII)',owasp:['LLM02'],desc:'身份證字號、護照、信用卡號碼',type:'pattern',action:'redact',threshold:null,scope:'全公司',enabled:true,hits:63},
+  {id:8,name:'SPICE Netlist',owasp:['LLM02'],desc:'.subckt / .ends / .model 電路描述',type:'pattern',action:'block',threshold:null,scope:'研發部',enabled:false,hits:18},
 ];
 
 const NODES = [
@@ -1293,16 +1316,23 @@ function renderNodes() {
 // ── Render Audit ──────────────────────────────────────────────────
 function renderAudit() {
   const tbody = document.getElementById('audit-tbody');
-  tbody.innerHTML = AUDIT_EVENTS.map(e => `
+  tbody.innerHTML = AUDIT_EVENTS.map(e => {
+    // Find matching rule to get OWASP tag
+    const ruleObj = RULES.find(r => r.name === e.rule || r.name.includes(e.rule) || e.rule.includes(r.name));
+    let tags = '';
+    if (ruleObj && ruleObj.owasp) {
+      tags = ruleObj.owasp.map(tag => `<span class="owasp-badge ${tag.toLowerCase()}" style="font-size:8px;padding:1.5px 4px;">${tag}</span>`).join('');
+    }
+    return `
     <tr>
       <td>${e.time}</td>
+      <td style="font-family:var(--sans);font-weight:500;">${e.rule} ${tags}</td>
+      <td class="audit-${e.action}">${e.action.toUpperCase()}</td>
       <td>${e.user}</td>
-      <td>${e.rule}</td>
-      <td><span class="badge badge-${e.action} audit-${e.action}">${e.action}</span></td>
       <td>${e.node}</td>
-      <td style="color:var(--color-text-faint)">${e.hash}</td>
+      <td><span class="history-hash" style="color:var(--muted);background:var(--paper-3);border-color:var(--line);">${e.hash}</span></td>
     </tr>
-  `).join('');
+  `}).join('');
 }
 
 // ── Render History ────────────────────────────────────────────────
@@ -1333,7 +1363,7 @@ function renderOverview() {
   const max = sorted[0].hits;
   topRules.innerHTML = sorted.map(r => `
     <div style="display:flex;align-items:center;gap:var(--space-3);margin-bottom:var(--space-3)">
-      <span style="min-width:120px;font-size:var(--text-xs);font-weight:500">${r.name}</span>
+      <span style="min-width:120px;font-size:var(--text-xs);font-weight:500;display:flex;align-items:center;">${r.name} ${r.owasp ? r.owasp.map(tag => `<span class="owasp-badge ${tag.toLowerCase()}" style="font-size:8px;padding:1px 4px;margin-left:4px;transform:none;">${tag}</span>`).join('') : ''}</span>
       <div style="flex:1;height:6px;background:var(--color-divider);border-radius:var(--radius-full);overflow:hidden">
         <div style="width:${(r.hits/max)*100}%;height:100%;background:var(--color-primary);border-radius:var(--radius-full)"></div>
       </div>
