@@ -438,6 +438,56 @@ section { position: relative; }
   gap: 56px;
   margin-top: 72px;
 }
+
+
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 0;
+}
+
+.lab-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px 4px 0 0;
+  background: var(--paper-2);
+}
+
+.lab-image-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-shot {
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  background: var(--paper-3);
+}
+
+.lab-shot + .lab-shot {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.lab-shot img {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .lab-grid {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 820px) { .principles { grid-template-columns: 1fr; gap: 40px; } }
 .principle .num {
   font-family: var(--mono);
@@ -490,9 +540,9 @@ section { position: relative; }
   text-transform: uppercase;
 }
 .note-type { color: var(--green); }
-.note:nth-child(2) .note-type { color: var(--blue); }
-.note:nth-child(4) .note-type,
-.note:nth-child(5) .note-type { color: var(--blue); }
+.note:nth-child(3) .note-type { color: var(--blue); }
+.note:nth-child(5) .note-type,
+.note:nth-child(6) .note-type { color: var(--blue); }
 
 .note-title {
   font-family: var(--serif);
@@ -919,7 +969,8 @@ footer.foot {
     </a>
     <div class="nav-links">
       <a href="#research">Research</a>
-      <a href="#approach" class="hide-md">Approach</a>
+      <a href="#lab" class="hide-md">Lab</a>
+          <a href="#approach" class="hide-md">Approach</a>
       <a href="#notes" class="hide-md">Notes</a>
       <a href="#people">People</a>
       <a href="#contact" class="nav-cta" id="navContact">Contact</a>
@@ -1064,6 +1115,83 @@ footer.foot {
   </div>
 </section>
 
+<!-- ─────────────  Lab  ───────────── -->
+<section class="section-pad" id="lab" style="background: var(--paper); border-top: 1px solid var(--line);">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Lab</div>
+        <h2 class="h-section">From theory to<br><em>operational control.</em></h2>
+      </div>
+      <div class="reveal delay-1">
+        <p class="lead" style="margin-top: 24px;">
+          On-premise LLM security governance, from policy authoring to multi-node deployment &mdash; built for enterprises where data never leaves the perimeter.
+        </p>
+        <p style="margin-top: 16px; font-size: 15px; color: var(--fg-2); line-height: 1.65;">
+          The <strong>Vigilio DLP Policy Studio</strong> is our first reference implementation: a control plane that translates AI threat models into enforceable, auditable rules across distributed inference nodes &mdash; without requiring data to touch an external API.
+        </p>
+      </div>
+    </div>
+
+    <!-- Feature callouts + aligned screenshots -->
+    <div class="lab-grid reveal delay-2">
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px;"><span class="dot"></span>Policy Authoring</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Natural-language rule input with structured YAML output. Conflict detection before deployment.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-1.png" alt="Policy Authoring UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px; color: var(--blue);"><span style="display:inline-block;width:6px;height:6px;background:var(--blue);border-radius:50%;margin-right:10px;vertical-align:middle;transform:translateY(-1px);"></span>Multi-Node Deploy</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Push governance rules to distributed proxy nodes in one operation. Per-node rollback with full git-style history.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-2.png" alt="Multi-Node Deploy UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px;"><span class="dot"></span>Audit &amp; Compliance</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Immutable audit log with prompt hashes, user attribution, and node-level action records. Export-ready for ISMS review.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-3.png" alt="Audit &amp; Compliance UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Optional wide overview: uncomment and replace src when ready -->
+    <!--
+    <div class="reveal delay-3" style="margin-top: 24px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; box-shadow: 0 20px 60px rgba(11, 16, 32, 0.08); background: var(--paper-2); padding: 4px;">
+      <img src="policy-studio-preview.png" alt="Vigilio DLP Policy Studio — full interface overview" style="width: 100%; display: block; border-radius: 4px; border: 1px solid var(--line);" loading="lazy">
+    </div>
+    -->
+
+    <!-- CTA -->
+    <div class="reveal delay-3" style="margin-top: 40px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+      <a href="policy-studio.html" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 16px 28px; border-radius: 999px; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); text-decoration: none; transition: transform .25s ease, background .25s ease, box-shadow .25s ease;">
+        <span>Open Live UI</span>
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 12px; flex-shrink: 0;"><path d="M2 6h8M6 2l4 4-4 4"></path></svg>
+      </a>
+      <span style="font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase;">GitHub repo releasing soon</span>
+    </div>
+  </div>
+</section>
+
 <!-- ─────────────  Approach  ───────────── -->
 <section class="approach section-pad" id="approach">
   <canvas class="approach-canvas" id="approachCanvas"></canvas>
@@ -1127,7 +1255,14 @@ footer.foot {
 
     <div class="notes-list">
 
-      <a class="note reveal" href="#contact">
+      <a class="note reveal" href="policy-studio.html" target="_blank" rel="noopener">
+        <span class="note-date">Apr · 2026</span>
+        <span class="note-type">Build</span>
+        <span class="note-title">Vigilio DLP Policy Studio — reference implementation of an on-premise LLM security control plane: policy authoring, multi-node deployment, audit log, and rollback. UI prototype live; open-source release in progress.</span>
+        <span class="note-arrow">↗</span>
+      </a>
+
+      <a class="note reveal delay-1" href="#contact">
         <span class="note-date">Feb · 2026</span>
         <span class="note-type">Disclosure</span>
         <span class="note-title">Empirical signals that Alibaba Qwen3-Coder-Next was distilled from Anthropic Claude — methodology, prompts, and reproduction notes.</span>
