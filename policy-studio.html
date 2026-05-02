@@ -3,21 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DLP Policy Studio — Vigilio</title>
-  <meta name="description" content="Vigilio DLP Policy Studio — on-premise LLM security governance control plane.">
+  <title>Vigilio DLP Policy Studio</title>
+
+  <meta name="description" content="Reference implementation of an on-premise LLM security control plane. Policy authoring, multi-node deployment, and audit logging.">
+
+  <!-- Open Graph / Social Sharing Previews -->
+  <meta property="og:title" content="Vigilio DLP Policy Studio — Interactive Preview" />
+  <meta property="og:description" content="Reference implementation of an on-premise LLM security control plane. Policy authoring, multi-node deployment, and audit logging." />
+  <meta property="og:image" content="https://vigilio.ai/policy-studio-preview.png" />
+  <meta property="og:url" content="https://vigilio.ai/policy-studio.html" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DLP Policy Studio — Vigilio</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-<style>
+
+  <style>
 /* ═══════════════════════════════════════════════════════════════
    Vigilio Design System v2 — DLP Policy Studio
    Design language: DeepMind-grade readiness. Clean authority.
@@ -795,10 +797,12 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
 /* ── Page section internal spacing ── */
 .page-section.active > * + * { margin-top: 20px; }
 .page-section.active .page-header { margin-bottom: 4px; }
-</style>
 
+.page-section.active { display: block; flex: 1 0 auto; }
+  </style>
 </head>
 <body>
+
 <div class="app-shell">
 
   <!-- ══ TOPBAR ══ -->
@@ -1091,10 +1095,12 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
       <div style="display:flex;justify-content:flex-end;"><button class="btn btn-primary">Save Settings</button></div>
     </section>
 
-  <footer style="text-align:center; padding: 16px 28px; margin-top: auto; border-top: 1px solid var(--line); flex-shrink: 0;">
-    <span id="site-copyright" style="font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted-2);">© 2026 Vigilio AI Research Lab. All Rights Reserved.</span>
-  </footer>
+  
 
+  
+    <footer style="margin-top: auto; padding: 20px; border-top: 1px solid var(--line); flex-shrink: 0; text-align: center;">
+      <span id="site-copyright" style="font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; color: var(--muted-2);">© 2026 Vigilio AI Research Lab. All Rights Reserved.</span>
+    </footer>
   </main>
 </div>
 
@@ -1153,7 +1159,6 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
 </div>
 
 <script>
-
 // ── Data Store ────────────────────────────────────────────────────
 const RULES = [
   {id:1,name:'IC 設計 IP',desc:'包含晶片電路設計、RTL 描述、netlist、製程節點規格',type:'describe',action:'block',threshold:0.85,scope:'全公司',enabled:true,hits:532},
@@ -1615,5 +1620,6 @@ renderOverview();
   el.textContent = '© ' + year + ' Vigilio AI Research Lab. All Rights Reserved.';
 })();
 </script>
+
 </body>
 </html>
