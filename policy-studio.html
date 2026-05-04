@@ -834,9 +834,9 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
             posthog.register({
                 ip_city: data.city,
                 ip_region: data.region,
+                ip_country: data.country,
                 ip_isp: data.org,
-                '$geoip_city_name': data.city,
-                '$geoip_country_name': data.country
+                ip_timezone: data.timezone
             });
 
             posthog.setPersonProperties({
