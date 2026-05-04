@@ -969,9 +969,9 @@ footer.foot {
             posthog.register({
                 ip_city: data.city,
                 ip_region: data.region,
-                ip_country: data.country,
                 ip_isp: data.org,
-                ip_timezone: data.timezone
+                '$geoip_city_name': data.city,
+                '$geoip_country_name': data.country
             });
 
             posthog.setPersonProperties({
