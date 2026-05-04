@@ -825,6 +825,27 @@ button,a,[role=button] { transition:color var(--transition),background var(--tra
         person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
     })
 </script>
+<script>
+    const ipinfoToken = '4dcae2d3ac02f7';
+
+    fetch(`https://ipinfo.io/json?token=${ipinfoToken}`)
+        .then(response => response.json())
+        .then(data => {
+            posthog.register({
+                ip_city: data.city,
+                ip_region: data.region,
+                ip_country: data.country,
+                ip_isp: data.org,
+                ip_timezone: data.timezone
+            });
+
+            posthog.setPersonProperties({
+                ip_city: data.city,
+                ip_isp: data.org
+            });
+        })
+        .catch(error => console.error('ipinfo error:', error));
+</script>
 </head>
 <body>
 
