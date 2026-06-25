@@ -3,283 +3,1903 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Vigilio — Independent AI lab</title>
-<meta name="description" content="Vigilio is an independent AI lab, currently in active development." />
+<title>Vigilio — An independent AI research lab building what general-purpose models can't</title>
+<meta name="description" content="Vigilio is an independent AI research lab. We build specialised software systems — secure agentic infrastructure, on-premise LLM governance, adversarial evaluation, and cost-bounded memory — for organisations whose problems a general-purpose model cannot solve on its own." />
 
+<!-- Web Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+/* ─────────────  Reset & Tokens  ───────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-:root{
-  --paper:#FFFFFF; --paper-2:#F6F8FB; --line:#E2E6EE; --line-2:#C8CFDC;
-  --ink:#0B1020; --ink-2:#1A2236; --fg-2:#3A4358; --muted:#6B7388; --muted-2:#98A0B5;
-  --green:#0E9F6B; --green-deep:#0A7B53; --blue:#2B5BD7; --blue-deep:#1E45B0;
-  --serif:'Instrument Serif','Source Serif Pro',Georgia,serif;
-  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  --mono:'JetBrains Mono','SF Mono',Menlo,monospace;
-  --gutter:clamp(22px,5vw,64px);
+:root {
+  /* Surfaces — clean cool whites with the slightest blue undertone */
+  --paper:         #FFFFFF;     /* primary white */
+  --paper-2:       #F6F8FB;     /* gentle alt section */
+  --paper-3:       #ECEFF5;     /* card / lift */
+  --line:          #E2E6EE;     /* hairline */
+  --line-2:        #C8CFDC;     /* hover / stronger */
+
+  /* Type — near-black with cool blue cast (DeepMind-grade contrast) */
+  --ink:           #0B1020;     /* primary text & ink-rich elements */
+  --ink-2:         #1A2236;     /* slightly softer */
+  --fg-2:          #3A4358;     /* secondary text */
+  --muted:         #6B7388;     /* tertiary / metadata */
+  --muted-2:       #98A0B5;     /* faint */
+
+  /* Accents — emerald + cobalt, calibrated for light surfaces */
+  --green:         #0E9F6B;     /* primary accent */
+  --green-deep:    #0A7B53;     /* hover / darker */
+  --green-soft:    rgba(14, 159, 107, 0.10);
+  --blue:          #2B5BD7;     /* secondary accent */
+  --blue-deep:     #1E45B0;
+  --blue-soft:     rgba(43, 91, 215, 0.10);
+
+  /* Status */
+  --danger:        #C0392B;
+
+  --serif:    'Instrument Serif', 'Source Serif Pro', Georgia, serif;
+  --sans:     'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono:     'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --maxw: 1240px;
+  --gutter: clamp(20px, 5vw, 64px);
 }
 
-html{scroll-behavior:smooth;}
-body{
-  font-family:var(--sans); color:var(--ink); background:var(--paper);
-  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-  min-height:100vh; min-height:100svh; overflow-x:hidden;
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--sans);
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
-a{color:inherit;text-decoration:none;}
-img,svg{display:block;max-width:100%;}
-::selection{background:var(--ink);color:var(--paper);}
 
-/* ── Full-viewport stage ── */
-.stage{
-  position:relative; min-height:100vh; min-height:100svh;
-  display:flex; flex-direction:column; isolation:isolate;
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+::selection { background: var(--ink); color: var(--paper); }
+
+/* ─────────────  Typography  ───────────── */
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.eyebrow .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--green);
+  border-radius: 50%;
+  margin-right: 10px;
+  vertical-align: middle;
+  transform: translateY(-1px);
+}
+
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 400; letter-spacing: -0.01em; color: var(--ink); }
+
+.display {
+  font-family: var(--serif);
+  font-size: clamp(44px, 6.6vw, 92px);
+  line-height: 1.02;
+  letter-spacing: -0.022em;
+  font-weight: 400;
+  color: var(--ink);
+}
+.display em      { font-style: italic; color: var(--green); }
+.display em.blue { font-style: italic; color: var(--blue); }
+
+.h-section {
+  font-family: var(--serif);
+  font-size: clamp(34px, 4.4vw, 60px);
+  line-height: 1.05;
+  letter-spacing: -0.018em;
+}
+.h-section em { font-style: italic; color: var(--green); }
+
+.h-card {
+  font-family: var(--serif);
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.18;
+  letter-spacing: -0.01em;
+}
+
+.lead {
+  font-size: clamp(17px, 1.35vw, 20px);
+  line-height: 1.55;
+  color: var(--fg-2);
+  max-width: 64ch;
+}
+
+p { color: var(--fg-2); }
+.muted { color: var(--muted); }
+
+/* ─────────────  Layout helpers  ───────────── */
+.container {
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+section { position: relative; }
+
+.rule { height: 1px; background: var(--line); width: 100%; }
+
+/* ─────────────  Logo (hexagon + diamond)  ───────────── */
+.logo-hex {
+  width: 30px; height: 30px;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.logo-hex .outer {
+  width: 100%; height: 100%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: linear-gradient(135deg, var(--green) 0%, var(--blue) 100%);
+  display: block;
+  position: relative;
+}
+.logo-hex .inner {
+  position: absolute;
+  width: 84%; height: 84%;
+  top: 8%; left: 8%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: var(--paper);
+}
+.logo-hex .core {
+  position: absolute;
+  width: 36%; height: 36%;
+  top: 32%; left: 32%;
+  background: var(--green);
+  transform: rotate(45deg);
+}
+
+/* ─────────────  Navigation  ───────────── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s ease, background .3s ease;
+}
+.nav.scrolled {
+  border-bottom-color: var(--line);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.nav-inner {
+  height: 70px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--gutter);
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.brand {
+  display: flex; align-items: center; gap: 12px;
+  font-family: var(--serif);
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.brand-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+
+.nav-links {
+  display: flex; gap: 36px; align-items: center;
+}
+.nav-links a {
+  font-size: 13.5px;
+  color: var(--ink-2);
+  font-weight: 500;
+  position: relative;
+  padding: 4px 0;
+  transition: color .2s ease;
+}
+.nav-links a:hover { color: var(--green); }
+.nav-links a::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px;
+  height: 1px; background: var(--green); transform: scaleX(0); transform-origin: left;
+  transition: transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.nav-links a:hover::after { transform: scaleX(1); }
+.nav-cta {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink) !important;
+  transition: background .25s ease, color .25s ease, border-color .25s ease;
+}
+.nav-cta:hover {
+  background: var(--ink);
+  color: var(--paper) !important;
+  border-color: var(--ink);
+}
+.nav-cta::after { display: none !important; }
+
+@media (max-width: 820px) {
+  .nav-links { gap: 18px; }
+  .nav-links .hide-md { display: none; }
+  .brand-meta { display: none; }
+}
+
+/* ─────────────  Hero  ───────────── */
+.hero {
+  position: relative;
+  padding: clamp(140px, 18vh, 200px) 0 clamp(80px, 12vh, 140px);
+  overflow: hidden;
+  isolation: isolate;
   background:
-    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(43,91,215,0.07), transparent 60%),
-    radial-gradient(ellipse 55% 50% at 6% 92%, rgba(14,159,107,0.06), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 85% 0%,   rgba(43, 91, 215, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 5% 100%,  rgba(14, 159, 107, 0.07), transparent 60%),
     var(--paper);
 }
-.grid-bg{
-  position:absolute; inset:0; z-index:-2;
+.hero-grid {
+  position: absolute; inset: 0;
   background-image:
-    linear-gradient(to right, rgba(11,16,32,0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11,16,32,0.04) 1px, transparent 1px);
-  background-size:64px 64px;
-  -webkit-mask-image:radial-gradient(ellipse 78% 72% at 62% 45%, #000 24%, transparent 82%);
-  mask-image:radial-gradient(ellipse 78% 72% at 62% 45%, #000 24%, transparent 82%);
+    linear-gradient(to right, rgba(11, 16, 32, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 16, 32, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 80%);
+  z-index: -2;
 }
-canvas#net{
-  position:absolute; inset:0; z-index:-1; opacity:0.92;
-  -webkit-mask-image:radial-gradient(ellipse 82% 82% at 64% 46%, #000 30%, transparent 88%);
-  mask-image:radial-gradient(ellipse 82% 82% at 64% 46%, #000 30%, transparent 88%);
-}
-
-/* ── Top bar ── */
-.bar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:26px var(--gutter); position:relative; z-index:2;
-}
-.brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:22px;letter-spacing:-0.01em;color:var(--ink);}
-.brand-meta{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;}
-.bar-link{font-family:var(--mono);font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink);display:inline-flex;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid transparent;transition:border-color .25s,color .25s;}
-.bar-link:hover{color:var(--green);border-bottom-color:var(--green);}
-.bar-link svg{width:11px;}
-
-/* ── Logo (hexagon + diamond) ── */
-.logo-hex{width:30px;height:30px;position:relative;display:inline-block;flex-shrink:0;}
-.logo-hex .outer{width:100%;height:100%;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:linear-gradient(135deg,var(--green) 0%,var(--blue) 100%);display:block;}
-.logo-hex .inner{position:absolute;width:84%;height:84%;top:8%;left:8%;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--paper);}
-.logo-hex .core{position:absolute;width:36%;height:36%;top:32%;left:32%;background:var(--green);transform:rotate(45deg);}
-
-/* ── Center content ── */
-.center{flex:1 1 auto;display:flex;align-items:center;padding:0 var(--gutter);position:relative;z-index:1;}
-.block{max-width:780px;}
-.eyebrow{display:inline-flex;align-items:center;gap:13px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:30px;}
-.eyebrow .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative;flex-shrink:0;}
-.eyebrow .pulse::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px solid var(--green);animation:pulse 2.6s ease-out infinite;}
-@keyframes pulse{0%{transform:scale(.55);opacity:1;}100%{transform:scale(2.1);opacity:0;}}
-
-h1.display{
-  font-family:var(--serif); font-weight:400;
-  font-size:clamp(46px,7.6vw,104px); line-height:1.0; letter-spacing:-0.022em;
-  color:var(--ink); margin-bottom:30px;
-}
-h1.display em{font-style:italic;color:var(--green);}
-h1.display em.blue{font-style:italic;color:var(--blue);}
-
-.sub{font-size:clamp(16px,1.35vw,19px);line-height:1.62;color:var(--fg-2);max-width:60ch;margin-bottom:40px;}
-.sub strong{color:var(--ink-2);font-weight:600;}
-
-.actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
-.cta{
-  display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
-  padding:15px 26px;border-radius:999px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);
-  transition:transform .25s,background .25s,box-shadow .25s;
-}
-.cta:hover{transform:translateY(-1px);background:var(--green);border-color:var(--green);box-shadow:0 8px 24px rgba(14,159,107,0.22);}
-.cta svg{width:12px;}
-.email{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:0.02em;}
-.email a{color:var(--ink);border-bottom:1px solid var(--line-2);padding-bottom:1px;transition:color .2s,border-color .2s;}
-.email a:hover{color:var(--blue);border-bottom-color:var(--blue);}
-
-/* ── Footer ── */
-.foot{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:24px var(--gutter); font-family:var(--mono); font-size:11.5px; letter-spacing:0.06em;
-  color:var(--muted); position:relative; z-index:2; border-top:1px solid var(--line);
-}
-.foot .stamp{display:inline-flex;align-items:center;gap:9px;}
-.foot .stamp .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(14,159,107,.5);animation:beat 3s ease-in-out infinite;}
-@keyframes beat{0%,100%{opacity:.5;}50%{opacity:1;}}
-
-@media (max-width:640px){
-  .brand-meta{display:none;}
-  .foot{flex-direction:column;gap:12px;text-align:center;}
-  h1.display{font-size:clamp(40px,12.5vw,62px);}
-  .center{padding-top:40px;padding-bottom:40px;}
+.hero-canvas {
+  position: absolute; inset: 0;
+  z-index: -1;
+  opacity: 0.85;
 }
 
-/* ── Reveal on load ── */
-.rv{opacity:0;transform:translateY(16px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1);}
-.rv.in{opacity:1;transform:none;}
-.d1{transition-delay:.08s;} .d2{transition-delay:.18s;} .d3{transition-delay:.28s;} .d4{transition-delay:.40s;}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;}
-  .rv{opacity:1;transform:none;}
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 14px;
+  padding: 7px 14px 7px 12px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  margin-bottom: 28px;
+  backdrop-filter: blur(6px);
 }
+.hero-tag .pulse {
+  width: 8px; height: 8px;
+  background: var(--green);
+  border-radius: 50%;
+  position: relative;
+}
+.hero-tag .pulse::after {
+  content: ''; position: absolute; inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--green);
+  animation: pulse 2.4s ease-out infinite;
+}
+@keyframes pulse {
+  0%   { transform: scale(.6); opacity: 1; }
+  100% { transform: scale(2.0); opacity: 0; }
+}
+.hero-tag span {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.hero h1 {
+  margin-bottom: 36px;
+  max-width: 22ch;
+}
+.hero-sub {
+  max-width: 60ch;
+  font-size: clamp(17px, 1.4vw, 20px);
+  color: var(--fg-2);
+  line-height: 1.55;
+  margin-bottom: 44px;
+}
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 28px 48px;
+  padding-top: 28px; border-top: 1px solid var(--line);
+  margin-top: 56px;
+}
+.hero-meta-item .k {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.hero-meta-item .v {
+  font-family: var(--serif);
+  font-size: 18px;
+  color: var(--ink);
+}
+
+/* ─────────────  Section base  ───────────── */
+.section-pad {
+  padding: clamp(80px, 12vh, 140px) 0;
+}
+.section-head {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 60px;
+  align-items: end;
+  margin-bottom: 72px;
+}
+@media (max-width: 820px) {
+  .section-head { grid-template-columns: 1fr; gap: 24px; }
+}
+
+/* ─────────────  Research  ───────────── */
+.research {
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+}
+.research-list { display: grid; gap: 0; }
+.research-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 1fr;
+  gap: 48px;
+  padding: 56px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: start;
+  transition: background .4s ease;
+}
+.research-item:last-child { border-bottom: none; }
+.research-item:hover { background: rgba(255, 255, 255, 0.55); }
+@media (max-width: 900px) {
+  .research-item { grid-template-columns: 1fr; gap: 16px; padding: 40px 0; }
+}
+
+.research-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--green);
+  padding-top: 8px;
+}
+.research-item:nth-child(2) .research-num { color: var(--blue); }
+.research-item:nth-child(3) .research-num { color: var(--green); }
+
+.research-title h3 { margin-bottom: 14px; }
+.research-title .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--fg-2);
+  background: var(--paper);
+}
+.research-body p {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--fg-2);
+  margin-bottom: 16px;
+}
+.research-body p:last-child { margin-bottom: 0; }
+.research-body em       { font-style: italic; color: var(--green); }
+.research-body em.blue  { font-style: italic; color: var(--blue); }
+
+/* ─────────────  Approach  ───────────── */
+.approach {
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+.approach::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(11, 16, 32, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 16, 32, 0.035) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 50%, #000 30%, transparent 85%);
+}
+.approach-canvas {
+  position: absolute;
+  top: 0; right: 0;
+  width: 50%; height: 100%;
+  pointer-events: none;
+  opacity: 0.75;
+}
+@media (max-width: 1000px) { .approach-canvas { display: none; } }
+
+.principles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 56px;
+  margin-top: 72px;
+}
+
+
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 0;
+}
+
+.lab-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-card {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 4px 4px 0 0;
+  background: var(--paper-2);
+}
+
+.lab-image-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.lab-shot {
+  border: 1px solid var(--line);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+  background: var(--paper-3);
+}
+
+.lab-shot + .lab-shot {
+  margin-top: 16px;
+  border-top: 1px solid var(--line);
+  border-radius: 4px;
+}
+
+.lab-shot img {
+  width: 100%;
+  display: block;
+}
+
+@media (max-width: 900px) {
+  .lab-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 820px) { .principles { grid-template-columns: 1fr; gap: 40px; } }
+.principle .num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--green);
+  margin-bottom: 14px;
+}
+.principle:nth-child(2) .num { color: var(--blue); }
+.principle h4 {
+  font-size: 22px;
+  line-height: 1.25;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+.principle p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--fg-2);
+}
+
+/* ─────────────  Selected Notes  ───────────── */
+.notes {
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+}
+.notes-list { display: grid; gap: 0; margin-top: 16px; }
+.note {
+  display: grid;
+  grid-template-columns: 110px 110px 1fr 24px;
+  gap: 32px;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--line);
+  align-items: baseline;
+  transition: padding-left .35s cubic-bezier(.2,.8,.2,1), background .35s ease;
+}
+.note:hover { padding-left: 12px; background: rgba(255, 255, 255, 0.55); }
+@media (max-width: 820px) {
+  .note { grid-template-columns: 90px 1fr; gap: 12px 20px; }
+  .note .note-type { grid-column: 1; }
+  .note .note-date { grid-column: 2; }
+  .note .note-title { grid-column: 1 / -1; }
+  .note .note-arrow { display: none; }
+}
+.note-date, .note-type {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.note-type { color: var(--green); }
+.note:nth-child(3) .note-type { color: var(--blue); }
+.note:nth-child(5) .note-type,
+.note:nth-child(6) .note-type { color: var(--blue); }
+
+.note-title {
+  font-family: var(--serif);
+  font-size: clamp(18px, 1.45vw, 21px);
+  line-height: 1.35;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.note-arrow {
+  font-family: var(--mono);
+  color: var(--muted);
+  transition: transform .3s ease, color .3s ease;
+}
+.note:hover .note-arrow { transform: translateX(4px); color: var(--green); }
+
+/* ─────────────  The Lab (about)  ───────────── */
+.pi {
+  background: var(--paper);
+  border-top: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
+}
+.pi::before {
+  content: '';
+  position: absolute;
+  top: -200px; right: -200px;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(43, 91, 215, 0.06), transparent 70%);
+  pointer-events: none;
+}
+.pi-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 80px;
+  align-items: start;
+  position: relative;
+}
+@media (max-width: 900px) {
+  .pi-grid { grid-template-columns: 1fr; gap: 40px; }
+}
+.pi-card {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  padding: 36px 32px;
+  position: relative;
+  border-radius: 4px;
+  box-shadow: 0 1px 0 rgba(11, 16, 32, 0.02), 0 8px 30px rgba(11, 16, 32, 0.04);
+}
+.pi-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green), var(--blue), transparent);
+  opacity: 0.7;
+}
+.pi-card .corner {
+  position: absolute; top: 14px; right: 14px;
+  font-family: var(--mono); font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.16em;
+}
+.pi-name {
+  font-family: var(--serif);
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.pi-name .alt { color: var(--muted); font-style: italic; }
+.pi-role {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green);
+  margin-bottom: 24px;
+}
+.pi-bio {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--fg-2);
+  margin-bottom: 24px;
+}
+.pi-meta {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.pi-meta dt {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-top: 2px;
+}
+.pi-meta dd { color: var(--ink); }
+
+.cv-track {
+  border-left: 1px solid var(--line);
+  padding-left: 32px;
+  margin-left: 8px;
+}
+.cv-item { position: relative; padding-bottom: 32px; }
+.cv-item:last-child { padding-bottom: 0; }
+.cv-item::before {
+  content: '';
+  position: absolute;
+  left: -36px; top: 8px;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--muted-2);
+}
+.cv-item.current::before {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(14, 159, 107, 0.15);
+}
+.cv-period {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.cv-role {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 6px;
+  letter-spacing: -0.005em;
+}
+.cv-role .org { color: var(--muted); font-style: italic; font-size: 16px; }
+.cv-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--fg-2);
+}
+
+.affiliations {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.affiliations .eyebrow { margin-bottom: 14px; }
+.affil-list {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.affil {
+  font-size: 13px;
+  padding: 6px 12px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-2);
+}
+
+/* ─────────────  Contact (kept light, with depth)  ───────────── */
+.contact {
+  background:
+    radial-gradient(ellipse 60% 50% at 100% 0%,  rgba(43, 91, 215, 0.07), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 0% 100%,  rgba(14, 159, 107, 0.07), transparent 60%),
+    var(--paper-2);
+  padding: clamp(100px, 14vh, 160px) 0 80px;
+  position: relative;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+.contact::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(11, 16, 32, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 16, 32, 0.035) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, #000 30%, transparent 80%);
+}
+.contact-inner { position: relative; z-index: 1; text-align: left; }
+.contact h2 { color: var(--ink); margin-bottom: 28px; max-width: 18ch; }
+.contact-lead {
+  color: var(--fg-2);
+  max-width: 56ch; font-size: 17px; margin-bottom: 56px;
+}
+.contact-cta-row {
+  display: flex; flex-wrap: wrap; gap: 16px;
+  align-items: center;
+}
+.btn-primary, .btn-ghost {
+  display: inline-flex; align-items: center; gap: 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 16px 28px;
+  border-radius: 999px;
+  transition: transform .25s ease, background .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease;
+}
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 8px 24px rgba(14, 159, 107, 0.22);
+}
+.btn-ghost {
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  background: var(--paper);
+}
+.btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+.btn-arrow { width: 12px; }
+
+/* ─────────────  Footer  ───────────── */
+footer.foot {
+  background: var(--paper);
+  color: var(--muted);
+  padding: 36px 0 32px;
+  border-top: 1px solid var(--line);
+}
+.foot-inner {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 12.5px;
+  font-family: var(--mono);
+  letter-spacing: 0.06em;
+}
+.foot-inner .links { display: flex; gap: 28px; }
+.foot-inner a { color: var(--muted); transition: color .2s; }
+.foot-inner a:hover { color: var(--green); }
+@media (max-width: 600px) {
+  .foot-inner { flex-direction: column; gap: 16px; text-align: center; }
+}
+
+/* ─────────────  Modal (Contact)  ───────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11, 16, 32, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn .25s ease;
+}
+.modal-overlay.show { display: flex; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  background: var(--paper);
+  width: 100%;
+  max-width: 520px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 44px 40px 36px;
+  position: relative;
+  box-shadow: 0 30px 80px rgba(11, 16, 32, 0.18);
+  animation: rise .35s cubic-bezier(.2,.8,.2,1);
+}
+.modal::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--green), var(--blue), transparent);
+  opacity: 0.8;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+.modal-close {
+  position: absolute; top: 18px; right: 18px;
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  background: transparent;
+  transition: background .2s, border-color .2s, color .2s;
+  font-family: var(--mono); font-size: 16px; line-height: 1;
+  color: var(--ink);
+}
+.modal-close:hover { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.modal .eyebrow { margin-bottom: 14px; }
+.modal h3 {
+  font-family: var(--serif);
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin-bottom: 14px;
+  color: var(--ink);
+}
+.modal p {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--fg-2);
+  margin-bottom: 28px;
+}
+
+.field { display: flex; flex-direction: column; margin-bottom: 18px; }
+.field label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.field input, .field textarea {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--paper-2);
+  font-family: var(--sans);
+  font-size: 14.5px;
+  color: var(--ink);
+  border-radius: 3px;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+  resize: vertical;
+}
+.field input::placeholder, .field textarea::placeholder { color: var(--muted-2); }
+.field input:focus, .field textarea:focus {
+  outline: none;
+  border-color: var(--green);
+  background: var(--paper);
+  box-shadow: 0 0 0 3px rgba(14, 159, 107, 0.12);
+}
+
+.modal-btn {
+  width: 100%;
+  padding: 14px 20px;
+  margin-top: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 3px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s ease, box-shadow .2s ease;
+  font-weight: 500;
+}
+.modal-btn:hover {
+  background: var(--green);
+  box-shadow: 0 6px 20px rgba(14, 159, 107, 0.25);
+}
+.modal-btn:disabled { opacity: .55; cursor: default; }
+
+.modal-msg {
+  margin-top: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--green-deep);
+  display: none;
+}
+.modal-msg.show { display: block; }
+.modal-msg.error { color: var(--danger); }
+
+.modal-direct {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.modal-direct a {
+  font-family: var(--mono);
+  color: var(--ink);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--green);
+  padding-bottom: 1px;
+  transition: color .2s ease;
+}
+.modal-direct a:hover { color: var(--green); }
+
+/* ─────────────  Reveal animation  ───────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity .9s cubic-bezier(.2,.8,.2,1), transform .9s cubic-bezier(.2,.8,.2,1);
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+.reveal.delay-1 { transition-delay: .08s; }
+.reveal.delay-2 { transition-delay: .16s; }
+.reveal.delay-3 { transition-delay: .24s; }
+.reveal.delay-4 { transition-delay: .32s; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ─────────────  Capabilities  ───────────── */
+.capabilities {
+  background: var(--paper-2);
+  border-top: 1px solid var(--line);
+}
+.cap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 22px;
+  margin-top: 8px;
+}
+@media (max-width: 820px) { .cap-grid { grid-template-columns: 1fr; } }
+.cap-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  padding: 32px 30px;
+  transition: border-color .3s ease, box-shadow .3s ease, transform .3s ease;
+}
+.cap-card:hover {
+  border-color: var(--line-2);
+  box-shadow: 0 16px 44px rgba(11, 16, 32, 0.06);
+  transform: translateY(-2px);
+}
+.cap-num {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  color: var(--green);
+  margin-bottom: 16px;
+}
+.cap-card:nth-child(even) .cap-num { color: var(--blue); }
+.cap-card h3 {
+  font-family: var(--serif);
+  font-size: clamp(21px, 1.9vw, 25px);
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin-bottom: 14px;
+  color: var(--ink);
+}
+.cap-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.cap-desc {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--fg-2);
+  margin-bottom: 22px;
+  flex: 1 1 auto;
+}
+.cap-why {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.cap-why .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--green-deep);
+  line-height: 1.5;
+  white-space: nowrap;
+  padding-top: 1px;
+}
+.cap-card:nth-child(even) .cap-why .label { color: var(--blue-deep); }
+.cap-why p { font-size: 13px; line-height: 1.55; color: var(--fg-2); margin: 0; }
+.cap-note {
+  margin-top: 36px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cap-note .bar { display: inline-block; width: 28px; height: 1px; background: var(--line-2); }
 </style>
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="Ei Ni init zi Gi Nr Ui Xi Hi capture calculateEventProperties tn register register_once register_for_session unregister unregister_for_session an getFeatureFlag getFeatureFlagPayload getFeatureFlagResult isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync ln identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty nn Qi createPersonProfile setInternalOrTestUser sn qi cn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Ji debug Fr rn getPageViewId captureTraceFeedback captureTraceMetric Bi".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_yzuwWnDjV5AbyXRFJ8hBc9qegmyjyxfY9E95RhwkqHxn', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-01-30',
+        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+    })
+</script>
+<script>
+    const ipinfoToken = '4dcae2d3ac02f7';
+
+    fetch(`https://ipinfo.io/json?token=${ipinfoToken}`)
+        .then(response => response.json())
+        .then(data => {
+            posthog.register({
+                ip_city: data.city,
+                ip_region: data.region,
+                ip_country: data.country,
+                ip_isp: data.org,
+                ip_timezone: data.timezone
+            });
+
+            posthog.setPersonProperties({
+                ip_city: data.city,
+                ip_isp: data.org
+            });
+        })
+        .catch(error => console.error('ipinfo error:', error));
+</script>
 </head>
 <body>
 
-<div class="stage">
-  <div class="grid-bg"></div>
-  <canvas id="net"></canvas>
-
-  <!-- Top bar -->
-  <header class="bar">
-    <a href="#" class="brand" aria-label="Vigilio">
-      <span class="logo-hex" aria-hidden="true"><span class="outer"></span><span class="inner"></span><span class="core"></span></span>
+<!-- ─────────────  Navigation  ───────────── -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <a href="#top" class="brand" aria-label="Vigilio home">
+      <span class="logo-hex" aria-hidden="true">
+        <span class="outer"></span>
+        <span class="inner"></span>
+        <span class="core"></span>
+      </span>
       <span>vigilio</span>
       <span class="brand-meta">Independent AI Lab</span>
     </a>
-    <a class="bar-link" href="mailto:transform@vigilio.ai">Get in touch <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a>
-  </header>
+    <div class="nav-links">
+      <a href="#research">Research</a>
+      <a href="#capabilities">Capabilities</a>
+      <a href="#lab" class="hide-md">Lab</a>
+      <a href="#approach" class="hide-md">Approach</a>
+      <a href="#notes" class="hide-md">Track Record</a>
+      <a href="#contact" class="nav-cta" id="navContact">Contact</a>
+    </div>
+  </div>
+</nav>
 
-  <!-- Center -->
-  <main class="center">
-    <div class="block">
-      <div class="eyebrow rv"><span class="pulse"></span>Independent AI lab — active development</div>
-      <h1 class="display rv d1">Building something <em>worth showing.</em></h1>
-      <p class="sub rv d2">
-        Vigilio is an independent AI lab. This page stays quiet on purpose — what lands here
-        is built and shipped first, shown second, never promised. New work appears as it's
-        ready. If you're working on something hard, <strong>the door is open.</strong>
-      </p>
-      <div class="actions rv d3">
-        <a class="cta" href="mailto:transform@vigilio.ai"><span>Start a conversation</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a>
-        <span class="email">or write to <a href="mailto:transform@vigilio.ai">transform@vigilio.ai</a></span>
+<!-- ─────────────  Hero  ───────────── -->
+<header class="hero" id="top">
+  <div class="hero-grid"></div>
+  <canvas class="hero-canvas" id="heroCanvas"></canvas>
+
+  <div class="container">
+    <div class="hero-tag reveal">
+      <span class="pulse"></span>
+      <span>Active research · 2026</span>
+    </div>
+
+    <h1 class="display reveal delay-1">
+      Toward AI systems that are <em>secure,</em> <em class="blue">frugal,</em> and <em>governable</em> as they evolve.
+    </h1>
+
+    <p class="hero-sub reveal delay-2">
+      Vigilio is an independent AI research lab. We study the control plane of agentic
+      systems — and turn that research into specialised software organisations can deploy:
+      secure agent infrastructure, on-premise LLM governance, adversarial evaluation, and
+      cost-bounded memory. The work we take on is the work a general-purpose model can't do on its own.
+    </p>
+
+    <div class="hero-meta reveal delay-3">
+      <div class="hero-meta-item">
+        <div class="k">Experience</div>
+        <div class="v">20 years · security, systems &amp; ML</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="k">Track record</div>
+        <div class="v">Acquired by Proofpoint · 2 U.S. patents</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="k">Deployment</div>
+        <div class="v">Self-hosted · data stays in your perimeter</div>
+      </div>
+      <div class="hero-meta-item">
+        <div class="k">Focus</div>
+        <div class="v">Agentic security · evaluation · governance</div>
       </div>
     </div>
-  </main>
+  </div>
+</header>
 
-  <!-- Footer -->
-  <footer class="foot rv d4">
-    <div>© 2026 Vigilio · Independent AI lab</div>
-    <div class="stamp"><span class="dot"></span>In active development · build 2026.06</div>
-  </footer>
+<!-- ─────────────  Research  ───────────── -->
+<section class="research section-pad" id="research">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Research Areas</div>
+      </div>
+      <div class="reveal delay-1">
+        <h2 class="h-section">Three threads of work, one underlying question:<br/><em>how do we keep increasingly autonomous AI systems safe, efficient, and answerable?</em></h2>
+      </div>
+    </div>
+
+    <div class="research-list">
+
+      <article class="research-item reveal">
+        <div class="research-num">RA · 01</div>
+        <div class="research-title">
+          <h3 class="h-card">Agentic AI Security Control</h3>
+          <div class="tags">
+            <span class="tag">Threat Modeling</span>
+            <span class="tag">Adversarial ML</span>
+            <span class="tag">Tool-use Containment</span>
+          </div>
+        </div>
+        <div class="research-body">
+          <p>
+            Today's agentic systems combine LLM reasoning, tool use, persistent memory, and multi-agent
+            delegation — a surface area that traditional AppSec was never designed to cover.
+            Our work formalises <em>control objectives</em> for agent runtimes: blast-radius bounds for
+            tool-calls, integrity guarantees on memory, and attestation across agent-to-agent hand-offs.
+          </p>
+          <p>
+            Current investigations include defenses against prompt-injection chains via RAG, model
+            inversion in fine-tuned domain models, data poisoning in continual-learning pipelines,
+            and evasion attacks on inference platforms (vLLM, Hugging Face, Slurm-scheduled jobs).
+          </p>
+        </div>
+      </article>
+
+      <article class="research-item reveal">
+        <div class="research-num">RA · 02</div>
+        <div class="research-title">
+          <h3 class="h-card">Experience-Driven Token Economy</h3>
+          <div class="tags">
+            <span class="tag">Memory Architectures</span>
+            <span class="tag">Inference Cost</span>
+            <span class="tag">Continual Learning</span>
+          </div>
+        </div>
+        <div class="research-body">
+          <p>
+            LLM cost today scales with context length; intelligence does not.
+            We study how to replace recomputation with <em class="blue">accumulated experience</em>:
+            structured episodic memory, distilled procedural skills, and verifiable retrieval
+            that lets an agent answer a recurring class of questions without re-paying for
+            the reasoning each time.
+          </p>
+          <p>
+            The goal is a measurable reduction in tokens-per-decision on production workloads,
+            without sacrificing factuality — a prerequisite for any agentic system that must
+            run continuously inside an enterprise budget.
+          </p>
+        </div>
+      </article>
+
+      <article class="research-item reveal">
+        <div class="research-num">RA · 03</div>
+        <div class="research-title">
+          <h3 class="h-card">Meta-Control of AI System Evolution</h3>
+          <div class="tags">
+            <span class="tag">Governance</span>
+            <span class="tag">Self-Modifying Systems</span>
+            <span class="tag">Alignment</span>
+          </div>
+        </div>
+        <div class="research-body">
+          <p>
+            Modern AI stacks rewrite themselves: weights are updated, prompts are rewritten by
+            other prompts, agents spawn agents. Single-layer policy is insufficient.
+            We are developing a <em>meta-control</em> approach that treats the AI system itself
+            as the object of governance — explicit invariants on the trajectory of change,
+            with audit trails that survive across model swaps and platform migrations.
+          </p>
+          <p>
+            The framing draws on classical control theory, software supply-chain integrity,
+            and threat modeling adapted for systems whose own behaviour is the deployment artefact.
+          </p>
+        </div>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Capabilities  ───────────── -->
+<section class="capabilities section-pad" id="capabilities">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Capabilities</div>
+      </div>
+      <div class="reveal delay-1">
+        <h2 class="h-section">The work a general-purpose model <em>can't do alone.</em></h2>
+        <p class="lead" style="margin-top: 24px;">
+          Frontier models are extraordinary — and generic. The problems organisations pay to
+          solve are specific: data that can't leave the building, latency budgets measured in
+          microseconds, and safety claims that have to be proven by someone with no incentive to
+          inflate them. We build the specialised systems that close that gap, and we own them end to end.
+        </p>
+      </div>
+    </div>
+
+    <div class="cap-grid">
+
+      <article class="cap-card reveal">
+        <div class="cap-num">CAP · 01</div>
+        <h3>Secure Agentic Infrastructure</h3>
+        <div class="cap-tags">
+          <span class="tag">Inline Gateway</span>
+          <span class="tag">Tool-use Containment</span>
+          <span class="tag">C++20 · Envoy</span>
+        </div>
+        <p class="cap-desc">
+          A control plane that sits in the data path of your agents — bounding blast radius on
+          tool-calls, holding integrity guarantees on memory, and attesting agent-to-agent
+          hand-offs. Engineered as an inline gateway, not a prompt wrapper.
+        </p>
+        <div class="cap-why">
+          <span class="label">Why not<br>off-the-shelf</span>
+          <p>Enforcement has to be deterministic, sub-millisecond, and live inside your perimeter. A model API can advise on policy; it can't guarantee what an agent is permitted to touch.</p>
+        </div>
+      </article>
+
+      <article class="cap-card reveal delay-1">
+        <div class="cap-num">CAP · 02</div>
+        <h3>On-Premise LLM Governance &amp; DLP</h3>
+        <div class="cap-tags">
+          <span class="tag">Data Residency</span>
+          <span class="tag">Policy → Rules</span>
+          <span class="tag">Audit · Rollback</span>
+        </div>
+        <p class="cap-desc">
+          Translate AI threat models into enforceable, auditable policy across distributed
+          inference nodes — natural-language authoring, one-operation multi-node deployment,
+          immutable audit logs, and per-node rollback. Data never crosses your boundary.
+        </p>
+        <div class="cap-why">
+          <span class="label">Why not<br>off-the-shelf</span>
+          <p>When compliance forbids sending data to an external API at all, a hosted model is a non-starter. Governance has to run where the data already lives.</p>
+        </div>
+      </article>
+
+      <article class="cap-card reveal">
+        <div class="cap-num">CAP · 03</div>
+        <h3>Adversarial Evaluation &amp; Assurance</h3>
+        <div class="cap-tags">
+          <span class="tag">Red-teaming</span>
+          <span class="tag">Multi-turn Attacks</span>
+          <span class="tag">Provenance</span>
+        </div>
+        <p class="cap-desc">
+          Independent, reproducible adversarial testing of frontier and self-hosted models —
+          prompt-injection chains, multi-turn jailbreaks, model inversion, and distillation
+          provenance — delivered with methodology you can audit and rerun.
+        </p>
+        <div class="cap-why">
+          <span class="label">Why not<br>off-the-shelf</span>
+          <p>A model can't certify its own safety. Assurance needs an adversary on the outside, running the tests a vendor has no incentive to run on itself.</p>
+        </div>
+      </article>
+
+      <article class="cap-card reveal delay-1">
+        <div class="cap-num">CAP · 04</div>
+        <h3>Cost-Bounded Memory Systems</h3>
+        <div class="cap-tags">
+          <span class="tag">Episodic Memory</span>
+          <span class="tag">Verifiable Retrieval</span>
+          <span class="tag">Tokens-per-Decision</span>
+        </div>
+        <p class="cap-desc">
+          Engineered memory that lets an agent answer a recurring class of questions without
+          re-paying for the reasoning each time — structured episodic memory, distilled
+          procedural skills, and retrieval whose results you can verify.
+        </p>
+        <div class="cap-why">
+          <span class="label">Why not<br>off-the-shelf</span>
+          <p>A longer context window recomputes everything and bills you for it. Continuous operation inside a fixed budget needs memory that is built, not rented.</p>
+        </div>
+      </article>
+
+    </div>
+
+    <div class="cap-note reveal delay-2">
+      <span class="bar"></span>
+      Every engagement ends in a defined deliverable: a running system, its documentation, and an audit trail you can hand to a reviewer.
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Lab  ───────────── -->
+<section class="section-pad" id="lab" style="background: var(--paper); border-top: 1px solid var(--line);">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Lab</div>
+        <h2 class="h-section">From theory to<br><em>operational control.</em></h2>
+      </div>
+      <div class="reveal delay-1">
+        <p class="lead" style="margin-top: 24px;">
+          On-premise LLM security governance, from policy authoring to multi-node deployment &mdash; built for enterprises where data never leaves the perimeter.
+        </p>
+        <p style="margin-top: 16px; font-size: 15px; color: var(--fg-2); line-height: 1.65;">
+          The <strong>Vigilio DLP Policy Studio</strong> is capability 02, shipped &mdash; our first public reference implementation. It translates AI threat models into enforceable, auditable rules across distributed inference nodes, without requiring data to touch an external API. Explore the live interface below.
+        </p>
+      </div>
+    </div>
+
+    <!-- Feature callouts + aligned screenshots -->
+    <div class="lab-grid reveal delay-2">
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px;"><span class="dot"></span>Policy Authoring</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Natural-language rule input with structured YAML output. Conflict detection before deployment.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-1.png" alt="Policy Authoring UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px; color: var(--blue);"><span style="display:inline-block;width:6px;height:6px;background:var(--blue);border-radius:50%;margin-right:10px;vertical-align:middle;transform:translateY(-1px);"></span>Multi-Node Deploy</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Push governance rules to distributed proxy nodes in one operation. Per-node rollback with full git-style history.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-2.png" alt="Multi-Node Deploy UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+      <div class="lab-column">
+        <div class="lab-card">
+          <div class="eyebrow" style="margin-bottom: 10px;"><span class="dot"></span>Audit &amp; Compliance</div>
+          <p style="font-size: 14.5px; color: var(--fg-2); line-height: 1.65;">Immutable audit log with prompt hashes, user attribution, and node-level action records. Export-ready for ISMS review.</p>
+        </div>
+        <div class="lab-image-stack">
+          <div class="lab-shot">
+            <img src="policy-studio-preview-3.png" alt="Audit &amp; Compliance UI" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Optional wide overview: uncomment and replace src when ready -->
+    <!--
+    <div class="reveal delay-3" style="margin-top: 24px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; box-shadow: 0 20px 60px rgba(11, 16, 32, 0.08); background: var(--paper-2); padding: 4px;">
+      <img src="policy-studio-preview.png" alt="Vigilio DLP Policy Studio — full interface overview" style="width: 100%; display: block; border-radius: 4px; border: 1px solid var(--line);" loading="lazy">
+    </div>
+    -->
+
+    <!-- CTA -->
+    <div class="reveal delay-3" style="margin-top: 40px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+      <a href="policy-studio.html" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 12px; font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; padding: 16px 28px; border-radius: 999px; background: var(--ink); color: var(--paper); border: 1px solid var(--ink); text-decoration: none; transition: transform .25s ease, background .25s ease, box-shadow .25s ease;">
+        <span>Open Live UI</span>
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="width: 12px; flex-shrink: 0;"><path d="M2 6h8M6 2l4 4-4 4"></path></svg>
+      </a>
+      <span style="font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase;">GitHub repo releasing soon</span>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Approach  ───────────── -->
+<section class="approach section-pad" id="approach">
+  <canvas class="approach-canvas" id="approachCanvas"></canvas>
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Approach</div>
+      </div>
+      <div class="reveal delay-1">
+        <h2 class="h-section">Research practice over product roadmap.</h2>
+        <p class="lead" style="margin-top:24px;">
+          We work in the gap between security research and ML systems engineering —
+          a place where empirical evidence is rare and deadlines are hostile to rigour.
+          A small set of commitments governs how we work — these three, specifically.
+        </p>
+      </div>
+    </div>
+
+    <div class="rule"></div>
+
+    <div class="principles">
+      <div class="principle reveal">
+        <div class="num">P · 01</div>
+        <h4>Threat models before tooling.</h4>
+        <p>
+          Every artefact begins with an explicit, falsifiable threat model.
+          We do not endorse defenses we cannot break ourselves first.
+        </p>
+      </div>
+      <div class="principle reveal delay-1">
+        <div class="num">P · 02</div>
+        <h4>Independence over scale.</h4>
+        <p>
+          Findings are published without vendor pressure.
+          When work touches a specific platform, we say so.
+        </p>
+      </div>
+      <div class="principle reveal delay-2">
+        <div class="num">P · 03</div>
+        <h4>Every layer, end to end.</h4>
+        <p>
+          Architecture matters because attackers compose primitives across layers.
+          Our reviews follow data, models, and identity from training corpus to inference response.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Selected Notes  ───────────── -->
+<section class="notes section-pad" id="notes">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Track Record</div>
+      </div>
+      <div class="reveal delay-1">
+        <h2 class="h-section">Shipped systems, disclosures, and prior art.</h2>
+      </div>
+    </div>
+
+    <div class="notes-list">
+
+      <a class="note reveal" href="policy-studio.html" target="_blank" rel="noopener">
+        <span class="note-date">Apr · 2026</span>
+        <span class="note-type">Build</span>
+        <span class="note-title">Vigilio DLP Policy Studio — reference implementation of an on-premise LLM security control plane: policy authoring, multi-node deployment, audit log, and rollback. UI prototype live; open-source release in progress.</span>
+        <span class="note-arrow">↗</span>
+      </a>
+
+      <a class="note reveal delay-1" href="#contact">
+        <span class="note-date">Feb · 2026</span>
+        <span class="note-type">Disclosure</span>
+        <span class="note-title">Empirical signals that Alibaba Qwen3-Coder-Next was distilled from Anthropic Claude — methodology, prompts, and reproduction notes.</span>
+        <span class="note-arrow">→</span>
+      </a>
+
+      <a class="note reveal delay-1" href="#contact">
+        <span class="note-date">2025 —</span>
+        <span class="note-type">Working Paper</span>
+        <span class="note-title">Adversarial evaluation across frontier LLMs (Claude, Gemini, GPT, Grok, DeepSeek R1, Qwen3-Coder on Ollama) under chain-of-thought and adversarial prompting.</span>
+        <span class="note-arrow">→</span>
+      </a>
+
+      <a class="note reveal delay-2" href="#contact">
+        <span class="note-date">2014 —</span>
+        <span class="note-type">Systems</span>
+        <span class="note-title">A low-latency, auto-orchestrating execution architecture for massive task processing (>100K LOC, in-house).</span>
+        <span class="note-arrow">→</span>
+      </a>
+
+      <a class="note reveal delay-3" href="https://patents.google.com/patent/US8555269" target="_blank" rel="noopener">
+        <span class="note-date">2013</span>
+        <span class="note-type">Patent</span>
+        <span class="note-title">U.S. Patent 8,555,269 — System and method for malware detection. Issued Oct 3, 2013.</span>
+        <span class="note-arrow">↗</span>
+      </a>
+
+      <a class="note reveal delay-3" href="https://patents.google.com/patent/US7779399" target="_blank" rel="noopener">
+        <span class="note-date">2010</span>
+        <span class="note-type">Patent</span>
+        <span class="note-title">U.S. Patent 7,779,399 — System and method for security analysis of source code. Issued Aug 17, 2010.</span>
+        <span class="note-arrow">↗</span>
+      </a>
+
+      <a class="note reveal delay-3" href="#contact">
+        <span class="note-date">2009 — 2012</span>
+        <span class="note-type">Product</span>
+        <span class="note-title">HackAlert™ — the first cloud malware-detection SaaS, taken to market across Taiwan, the U.S., and Europe. Built at Armorize, later acquired by Proofpoint.</span>
+        <span class="note-arrow">→</span>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  The Lab  ───────────── -->
+<section class="pi section-pad" id="about">
+  <div class="container">
+    <div class="section-head">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>The Lab</div>
+      </div>
+      <div class="reveal delay-1">
+        <h2 class="h-section">Heritage you can <em>verify</em> — not a list of credentials.</h2>
+      </div>
+    </div>
+
+    <div class="pi-grid">
+
+      <aside class="pi-card reveal">
+        <span class="corner">EST · 2025</span>
+        <div class="pi-name">Vigilio</div>
+        <div class="pi-role">Independent AI research lab · Taiwan</div>
+        <p class="pi-bio">
+          An independent lab where security research and systems engineering sit in the same
+          hands. Engagements are deliberately narrow — one well-specified problem, carried through
+          from threat model to working software.
+        </p>
+        <dl class="pi-meta">
+          <dt>Disciplines</dt><dd>Security architecture · Low-latency systems · Applied ML</dd>
+          <dt>Foundational IP</dt><dd>US 8,555,269 · US 7,779,399</dd>
+          <dt>Heritage</dt><dd>Armorize &rarr; Proofpoint</dd>
+          <dt>Roots</dt><dd>UC Berkeley EECS · OWASP Taiwan</dd>
+        </dl>
+      </aside>
+
+      <div class="reveal delay-1">
+        <p style="font-size: 16px; line-height: 1.7; color: var(--fg-2); margin-bottom: 20px;">
+          Vigilio's work is grounded in two decades spanning security architecture, low-latency
+          systems engineering, and applied machine learning — the same combination behind
+          <strong>HackAlert™</strong>, the first cloud malware-detection SaaS, which was taken to
+          market across three continents and ended in an acquisition by Proofpoint. That lineage
+          is also visible in foundational patents on malware detection and source-code security
+          analysis, and in research ties to UC Berkeley EECS and the founding of OWASP Taiwan.
+        </p>
+        <p style="font-size: 16px; line-height: 1.7; color: var(--fg-2); margin-bottom: 20px;">
+          We keep the lab small and senior on purpose: the people who design a system are the
+          people who build it, break it, and ship it. Because the work is engineered rather than
+          prompted, it survives a model swap or a platform migration intact.
+        </p>
+        <p style="font-size: 16px; line-height: 1.7; color: var(--fg-2);">
+          The thesis is simple. General-purpose models are becoming a commodity; the durable
+          advantage sits in the specialised systems built around them — the ones that respect a
+          data boundary, hold a latency budget, and can be audited. That is the work we take on.
+        </p>
+
+        <div class="affiliations">
+          <div class="eyebrow"><span class="dot"></span>Provenance &amp; Standards</div>
+          <div class="affil-list">
+            <span class="affil">Armorize &rarr; Proofpoint (acquisition)</span>
+            <span class="affil">U.S. Patents &times;2 — malware &amp; source-code security</span>
+            <span class="affil">UC Berkeley EECS — Visiting Scholar</span>
+            <span class="affil">Founding Vice Chair, OWASP Taiwan</span>
+            <span class="affil">First cloud malware-detection SaaS (HackAlert™)</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Contact  ───────────── -->
+<section class="contact" id="contact">
+  <div class="container">
+    <div class="contact-inner">
+      <div class="reveal">
+        <div class="eyebrow"><span class="dot"></span>Contact</div>
+      </div>
+      <h2 class="h-section reveal delay-1">Bring us the problem a generic model can't solve.</h2>
+      <p class="contact-lead reveal delay-2">
+        For custom system builds, enterprise engagements, technical reviews, adversarial
+        evaluation, advisory work, or responsible-disclosure conversations — reach out.
+        We take on only what we can ship, and we'll tell you quickly whether a project is a fit.
+      </p>
+      <div class="contact-cta-row reveal delay-3">
+        <a href="#" class="btn-primary" id="openContact">
+          <span>Open contact form</span>
+          <svg class="btn-arrow" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg>
+        </a>
+        <a href="mailto:transform@vigilio.ai" class="btn-ghost">
+          transform[at]vigilio.ai
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────  Footer  ───────────── -->
+<footer class="foot">
+  <div class="container">
+    <div class="foot-inner">
+      <div>© 2026 Vigilio · Independent AI Research Lab</div>
+      <div class="links">
+        <a href="#research">Research</a>
+        <a href="#capabilities">Capabilities</a>
+        <a href="#notes">Track Record</a>
+        <a href="#contact">Contact</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ─────────────  Modal  ───────────── -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <button class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <div class="eyebrow"><span class="dot"></span>Contact</div>
+    <h3 id="modalTitle">Get in touch with Vigilio.</h3>
+    <p>Briefly tell us the nature of your enquiry — an engagement, a custom build, advisory, evaluation, or responsible disclosure. Every message is read personally.</p>
+
+    <form id="contactForm" novalidate>
+      <div class="field">
+        <label for="cName">Name</label>
+        <input type="text" id="cName" name="name" autocomplete="name" required />
+      </div>
+      <div class="field">
+        <label for="cEmail">Email</label>
+        <input type="email" id="cEmail" name="email" autocomplete="email" placeholder="name@company.com" required />
+      </div>
+      <div class="field">
+        <label for="cOrg">Organisation (optional)</label>
+        <input type="text" id="cOrg" name="org" autocomplete="organization" />
+      </div>
+      <div class="field">
+        <label for="cMsg">Message</label>
+        <textarea id="cMsg" name="message" rows="4" required></textarea>
+      </div>
+      <button type="submit" class="modal-btn" id="submitBtn">Send message</button>
+      <div class="modal-msg" id="modalMsg"></div>
+    </form>
+
+    <div class="modal-direct">
+      <span>Or write directly</span>
+      <a href="mailto:transform@vigilio.ai">transform@vigilio.ai</a>
+    </div>
+  </div>
 </div>
 
 <script>
-/* Reveal on load (with fallback) */
-window.addEventListener('load',()=>document.querySelectorAll('.rv').forEach(el=>el.classList.add('in')));
-setTimeout(()=>document.querySelectorAll('.rv').forEach(el=>el.classList.add('in')),140);
+/* ─────────────  Nav scroll state  ───────────── */
+const nav = document.getElementById('nav');
+const onScroll = () => {
+  if (window.scrollY > 8) nav.classList.add('scrolled');
+  else nav.classList.remove('scrolled');
+};
+window.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
 
-/* ── Living network with signal pulses (light theme) ── */
-(function net(){
-  const c=document.getElementById('net'); if(!c) return;
-  const ctx=c.getContext('2d');
-  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let W,H,dpr;
-  function resize(){
-    dpr=Math.min(window.devicePixelRatio||1,2);
-    W=c.clientWidth=c.offsetWidth; H=c.clientHeight=c.offsetHeight;
-    c.width=W*dpr; c.height=H*dpr; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
+/* ─────────────  Reveal-on-scroll  ───────────── */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(en => {
+    if (en.isIntersecting) {
+      en.target.classList.add('in');
+      io.unobserve(en.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+/* ─────────────  Modal  ───────────── */
+const overlay = document.getElementById('modalOverlay');
+const openBtn = document.getElementById('openContact');
+const navContact = document.getElementById('navContact');
+const closeBtn = document.getElementById('modalClose');
+
+const openModal = (e) => {
+  if (e) e.preventDefault();
+  overlay.classList.add('show');
+  setTimeout(() => document.getElementById('cName').focus(), 200);
+};
+const closeModal = () => overlay.classList.remove('show');
+
+openBtn.addEventListener('click', openModal);
+navContact.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+closeBtn.addEventListener('click', closeModal);
+overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('show')) closeModal(); });
+
+/* Form */
+const form = document.getElementById('contactForm');
+const msg = document.getElementById('modalMsg');
+const submitBtn = document.getElementById('submitBtn');
+
+form.addEventListener('submit', (e) => {
+  e.preventDefault();
+  msg.classList.remove('show', 'error');
+
+  const name  = document.getElementById('cName').value.trim();
+  const email = document.getElementById('cEmail').value.trim();
+  const org   = document.getElementById('cOrg').value.trim();
+  const body  = document.getElementById('cMsg').value.trim();
+
+  if (!name || !email || !body) {
+    msg.textContent = 'Please complete name, email, and message.';
+    msg.classList.add('show', 'error');
+    return;
   }
-  resize(); window.addEventListener('resize',resize);
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRe.test(email)) {
+    msg.textContent = 'Please provide a valid email address.';
+    msg.classList.add('show', 'error');
+    return;
+  }
 
-  const N = window.innerWidth<720?34:64;
-  const MAXD=152;
-  const nodes=Array.from({length:N},(_,i)=>({
-    x:Math.random()*W, y:Math.random()*H,
-    vx:(Math.random()-.5)*0.16, vy:(Math.random()-.5)*0.16,
-    r:Math.random()*1.4+0.8,
-    type:i%9===0?'green':(i%13===0?'blue':'plain'),
-    lit:0
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Opening mail client…';
+
+  const subject = encodeURIComponent(`[Vigilio] Enquiry from ${name}`);
+  const lines = [
+    `Name: ${name}`,
+    `Email: ${email}`,
+    org ? `Organisation: ${org}` : null,
+    '',
+    body
+  ].filter(Boolean).join('\n');
+  const href = `mailto:transform@vigilio.ai?subject=${subject}&body=${encodeURIComponent(lines)}`;
+
+  window.location.href = href;
+
+  setTimeout(() => {
+    msg.textContent = 'Thank you — your mail client should now be open. If not, write to transform@vigilio.ai directly.';
+    msg.classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Send message';
+  }, 600);
+});
+
+/* ─────────────  Hero canvas: slow node graph (light bg edition)  ───────────── */
+(function heroNet() {
+  const canvas = document.getElementById('heroCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let W, H, dpr;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const resize = () => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth = canvas.offsetWidth;
+    H = canvas.clientHeight = canvas.offsetHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const N = window.innerWidth < 720 ? 28 : 56;
+  const nodes = Array.from({length: N}, (_, i) => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 0.18,
+    vy: (Math.random() - 0.5) * 0.18,
+    r: Math.random() * 1.3 + 0.7,
+    type: i % 7 === 0 ? 'green' : (i % 11 === 0 ? 'blue' : 'plain')
   }));
-  const pulses=[]; // {a,b,t,speed,color}
 
-  function nearestFrom(i,exclude){
-    const a=nodes[i]; let best=-1,bd=MAXD*MAXD;
-    for(let j=0;j<N;j++){ if(j===i||j===exclude)continue; const b=nodes[j];
-      const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
-      if(d2<bd&&d2>40){bd=d2;best=j;} }
-    return best;
-  }
-  function spawn(){
-    const i=Math.floor(Math.random()*N), b=nearestFrom(i,-1);
-    if(b>=0){ const col=Math.random()<0.5?'14,159,107':'43,91,215';
-      pulses.push({a:i,b:b,t:0,speed:0.011+Math.random()*0.012,color:col}); }
-  }
+  const tick = () => {
+    ctx.clearRect(0, 0, W, H);
 
-  let acc=0;
-  function frame(){
-    ctx.clearRect(0,0,W,H);
-    for(const n of nodes){
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W)n.vx*=-1; if(n.y<0||n.y>H)n.vy*=-1;
-      if(n.lit>0)n.lit*=0.94;
+    for (const n of nodes) {
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
     }
-    /* edges */
-    ctx.lineWidth=0.6;
-    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
-      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
-      if(d2<MAXD*MAXD){ const al=(1-Math.sqrt(d2)/MAXD)*0.26;
-        ctx.strokeStyle=`rgba(11,16,32,${al})`;
-        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke(); }
-    }
-    /* pulses */
-    for(let k=pulses.length-1;k>=0;k--){
-      const p=pulses[k],a=nodes[p.a],b=nodes[p.b];
-      p.t+=p.speed;
-      const x=a.x+(b.x-a.x)*p.t, y=a.y+(b.y-a.y)*p.t;
-      const g=ctx.createLinearGradient(a.x,a.y,x,y);
-      g.addColorStop(0,`rgba(${p.color},0)`); g.addColorStop(1,`rgba(${p.color},0.5)`);
-      ctx.strokeStyle=g; ctx.lineWidth=1.4;
-      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(x,y);ctx.stroke();
-      ctx.shadowColor=`rgba(${p.color},1)`; ctx.shadowBlur=8;
-      ctx.fillStyle=`rgba(${p.color},1)`;
-      ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
-      if(p.t>=1){
-        nodes[p.b].lit=1; pulses.splice(k,1);
-        if(Math.random()<0.55 && pulses.length<20){
-          const nx=nearestFrom(p.b,p.a);
-          if(nx>=0)pulses.push({a:p.b,b:nx,t:0,speed:0.011+Math.random()*0.012,color:p.color});
+
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x - b.x, dy = a.y - b.y;
+        const d2 = dx*dx + dy*dy;
+        const max = 145;
+        if (d2 < max*max) {
+          const alpha = (1 - Math.sqrt(d2)/max) * 0.30;
+          ctx.strokeStyle = `rgba(11, 16, 32, ${alpha})`;
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
         }
       }
     }
-    /* nodes */
-    for(const n of nodes){
-      let fill='rgba(11,16,32,0.5)',glow=0;
-      if(n.type==='green'){fill='rgba(14,159,107,1)';glow=6;}
-      else if(n.type==='blue'){fill='rgba(43,91,215,1)';glow=6;}
-      if(n.lit>0.05){ glow=Math.max(glow,7*n.lit);
-        if(n.type==='plain')fill=`rgba(14,159,107,${0.45+0.55*n.lit})`; }
-      if(glow){ctx.shadowColor=fill;ctx.shadowBlur=glow;}
-      ctx.fillStyle=fill;
-      ctx.beginPath();ctx.arc(n.x,n.y,n.r+(glow?0.6:0),0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
-    }
-    if(!reduced){
-      acc++;
-      if(acc%70===0 && pulses.length<13) spawn();
-      requestAnimationFrame(frame);
-    }
-  }
 
-  if(reduced){ frame(); }
-  else { spawn(); setTimeout(spawn,600); frame(); }
+    for (const n of nodes) {
+      let fill = 'rgba(11, 16, 32, 0.55)';
+      let glow = 0;
+      if (n.type === 'green') { fill = 'rgba(14, 159, 107, 1)';   glow = 6; }
+      else if (n.type === 'blue')  { fill = 'rgba(43, 91, 215, 1)'; glow = 6; }
+
+      if (glow) {
+        ctx.shadowColor = fill;
+        ctx.shadowBlur = glow;
+      }
+      ctx.fillStyle = fill;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r + (glow ? 0.5 : 0), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+
+    if (!reduced) requestAnimationFrame(tick);
+  };
+  tick();
 })();
-</script>
 
-<!-- Analytics (carried over from the existing site; remove if not wanted) -->
-<script>
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify reset people.set".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-posthog.init('phc_yzuwWnDjV5AbyXRFJ8hBc9qegmyjyxfY9E95RhwkqHxn',{api_host:'https://us.i.posthog.com',defaults:'2026-01-30',person_profiles:'identified_only'});
-</script>
-<script>
-(function(){var t='4dcae2d3ac02f7';fetch('https://ipinfo.io/json?token='+t).then(r=>r.json()).then(d=>{if(window.posthog){posthog.register({ip_city:d.city,ip_region:d.region,ip_country:d.country,ip_isp:d.org});posthog.setPersonProperties&&posthog.setPersonProperties({ip_city:d.city,ip_isp:d.org});}}).catch(()=>{});})();
+/* ─────────────  Approach canvas: slow orbits (light bg)  ───────────── */
+(function approachOrbit() {
+  const canvas = document.getElementById('approachCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W, H, dpr, t = 0;
+
+  const resize = () => {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = canvas.clientWidth = canvas.offsetWidth;
+    H = canvas.clientHeight = canvas.offsetHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.scale(dpr, dpr);
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const draw = () => {
+    ctx.clearRect(0, 0, W, H);
+    const cx = W * 0.55;
+    const cy = H * 0.5;
+
+    for (let r = 60; r < Math.max(W, H); r += 60) {
+      ctx.strokeStyle = 'rgba(11, 16, 32, 0.05)';
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    const orbits = [
+      { r: 110, speed: 0.0006, count: 3, color: 'rgba(14, 159, 107, 1)',   ring: 'rgba(14, 159, 107, 0.22)' },
+      { r: 200, speed: 0.0004, count: 5, color: 'rgba(43, 91, 215, 0.95)', ring: 'rgba(43, 91, 215, 0.18)'  },
+      { r: 300, speed: 0.0002, count: 7, color: 'rgba(11, 16, 32, 0.55)',  ring: 'rgba(11, 16, 32, 0.10)'   }
+    ];
+
+    orbits.forEach((o) => {
+      ctx.strokeStyle = o.ring;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.arc(cx, cy, o.r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let i = 0; i < o.count; i++) {
+        const a = (i / o.count) * Math.PI * 2 + t * o.speed;
+        const x = cx + Math.cos(a) * o.r;
+        const y = cy + Math.sin(a) * o.r;
+        ctx.shadowColor = o.color;
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = o.color;
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    });
+
+    t += 16;
+    if (!reduced) requestAnimationFrame(draw);
+  };
+  draw();
+})();
 </script>
 
 </body>
