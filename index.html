@@ -3,12 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Vigilio — Independent AI Lab</title>
-<meta name="description" content="Vigilio is an independent AI lab, currently in active development." />
+<title>Vigilio</title>
+<meta name="description" content="Vigilio." />
+<!-- Stealth: discourage search-engine indexing. Remove this line when you're ready to be discovered. -->
+<meta name="robots" content="noindex, nofollow" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
@@ -16,264 +18,128 @@
 :root{
   --paper:#FFFFFF; --paper-2:#F6F8FB; --line:#E2E6EE; --line-2:#C8CFDC;
   --ink:#0B1020; --ink-2:#1A2236; --fg-2:#3A4358; --muted:#6B7388; --muted-2:#98A0B5;
-  --green:#0E9F6B; --green-deep:#0A7B53; --blue:#2B5BD7; --blue-deep:#1E45B0;
+  --green:#0E9F6B; --blue:#2B5BD7;
   --serif:'Instrument Serif','Source Serif Pro',Georgia,serif;
   --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   --mono:'JetBrains Mono','SF Mono',Menlo,monospace;
-  --gutter:clamp(22px,5vw,64px);
 }
 
 html{scroll-behavior:smooth;}
 body{
   font-family:var(--sans); color:var(--ink); background:var(--paper);
   -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
-  min-height:100vh; min-height:100svh; overflow-x:hidden;
+  min-height:100vh; min-height:100svh; overflow:hidden;
 }
 a{color:inherit;text-decoration:none;}
-img,svg{display:block;max-width:100%;}
 ::selection{background:var(--ink);color:var(--paper);}
 
-/* ── Full-viewport stage ── */
 .stage{
   position:relative; min-height:100vh; min-height:100svh;
-  display:flex; flex-direction:column; isolation:isolate;
-  background:
-    radial-gradient(ellipse 60% 50% at 88% 12%, rgba(43,91,215,0.07), transparent 60%),
-    radial-gradient(ellipse 55% 50% at 6% 92%, rgba(14,159,107,0.06), transparent 60%),
-    var(--paper);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  isolation:isolate; padding:40px 24px;
+  background:var(--paper);
 }
-.grid-bg{
+
+/* Ambient: a single, slow "breathing" glow — a quiet seed of light, revealing nothing */
+.glow{
+  position:absolute; z-index:-1;
+  top:44%; left:50%; width:min(760px,120vw); height:min(760px,120vw);
+  transform:translate(-50%,-50%);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(14,159,107,0.10), transparent 46%),
+    radial-gradient(circle at 54% 46%, rgba(43,91,215,0.08), transparent 52%);
+  filter:blur(6px);
+  animation:breathe 9s ease-in-out infinite;
+}
+@keyframes breathe{
+  0%,100%{opacity:.72; transform:translate(-50%,-50%) scale(.96);}
+  50%{opacity:1; transform:translate(-50%,-50%) scale(1.04);}
+}
+/* faint fixed grid, masked to fade at the edges */
+.grid{
   position:absolute; inset:0; z-index:-2;
   background-image:
-    linear-gradient(to right, rgba(11,16,32,0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(11,16,32,0.04) 1px, transparent 1px);
-  background-size:64px 64px;
-  -webkit-mask-image:radial-gradient(ellipse 78% 72% at 62% 45%, #000 24%, transparent 82%);
-  mask-image:radial-gradient(ellipse 78% 72% at 62% 45%, #000 24%, transparent 82%);
-}
-canvas#net{
-  position:absolute; inset:0; z-index:-1; opacity:0.92;
-  -webkit-mask-image:radial-gradient(ellipse 82% 82% at 64% 46%, #000 30%, transparent 88%);
-  mask-image:radial-gradient(ellipse 82% 82% at 64% 46%, #000 30%, transparent 88%);
+    linear-gradient(to right, rgba(11,16,32,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11,16,32,0.035) 1px, transparent 1px);
+  background-size:72px 72px;
+  -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 46%, #000 10%, transparent 72%);
+  mask-image:radial-gradient(ellipse 60% 55% at 50% 46%, #000 10%, transparent 72%);
 }
 
-/* ── Top bar ── */
-.bar{
-  display:flex; align-items:center; justify-content:space-between;
-  padding:26px var(--gutter); position:relative; z-index:2;
-}
-.brand{display:flex;align-items:center;gap:12px;font-family:var(--serif);font-size:22px;letter-spacing:-0.01em;color:var(--ink);}
-.brand-meta{font-family:var(--mono);font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--muted);border-left:1px solid var(--line);padding-left:12px;}
-.bar-link{font-family:var(--mono);font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink);display:inline-flex;align-items:center;gap:7px;padding:8px 0;border-bottom:1px solid transparent;transition:border-color .25s,color .25s;}
-.bar-link:hover{color:var(--green);border-bottom-color:var(--green);}
-.bar-link svg{width:11px;}
+/* Center mark */
+.core{display:flex; flex-direction:column; align-items:center; text-align:center;}
 
-/* ── Logo (hexagon + diamond) ── */
-.logo-hex{width:30px;height:30px;position:relative;display:inline-block;flex-shrink:0;}
-.logo-hex .outer{width:100%;height:100%;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:linear-gradient(135deg,var(--green) 0%,var(--blue) 100%);display:block;}
+.logo-hex{width:52px;height:52px;position:relative;display:inline-block;margin-bottom:26px;}
+.logo-hex .outer{width:100%;height:100%;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:linear-gradient(135deg,var(--green) 0%,var(--blue) 100%);display:block;box-shadow:0 6px 30px rgba(14,159,107,0.18);}
 .logo-hex .inner{position:absolute;width:84%;height:84%;top:8%;left:8%;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);background:var(--paper);}
-.logo-hex .core{position:absolute;width:36%;height:36%;top:32%;left:32%;background:var(--green);transform:rotate(45deg);}
+.logo-hex .cored{position:absolute;width:34%;height:34%;top:33%;left:33%;background:var(--green);transform:rotate(45deg);}
 
-/* ── Center content ── */
-.center{flex:1 1 auto;display:flex;align-items:center;padding:0 var(--gutter);position:relative;z-index:1;}
-.block{max-width:780px;}
-.eyebrow{display:inline-flex;align-items:center;gap:13px;font-family:var(--mono);font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:30px;}
-.eyebrow .pulse{width:8px;height:8px;border-radius:50%;background:var(--green);position:relative;flex-shrink:0;}
-.eyebrow .pulse::after{content:'';position:absolute;inset:-5px;border-radius:50%;border:1px solid var(--green);animation:pulse 2.6s ease-out infinite;}
-@keyframes pulse{0%{transform:scale(.55);opacity:1;}100%{transform:scale(2.1);opacity:0;}}
-
-h1.display{
+.word{
   font-family:var(--serif); font-weight:400;
-  font-size:clamp(46px,7.6vw,104px); line-height:1.0; letter-spacing:-0.022em;
-  color:var(--ink); margin-bottom:30px;
-}
-h1.display em{font-style:italic;color:var(--green);}
-h1.display em.blue{font-style:italic;color:var(--blue);}
-
-.sub{font-size:clamp(16px,1.35vw,19px);line-height:1.62;color:var(--fg-2);max-width:60ch;margin-bottom:40px;}
-.sub strong{color:var(--ink-2);font-weight:600;}
-
-.actions{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
-.cta{
-  display:inline-flex;align-items:center;gap:11px;font-family:var(--mono);font-size:12px;letter-spacing:0.12em;text-transform:uppercase;
-  padding:15px 26px;border-radius:999px;background:var(--ink);color:var(--paper);border:1px solid var(--ink);
-  transition:transform .25s,background .25s,box-shadow .25s;
-}
-.cta:hover{transform:translateY(-1px);background:var(--green);border-color:var(--green);box-shadow:0 8px 24px rgba(14,159,107,0.22);}
-.cta svg{width:12px;}
-.email{font-family:var(--mono);font-size:13px;color:var(--muted);letter-spacing:0.02em;}
-.email a{color:var(--ink);border-bottom:1px solid var(--line-2);padding-bottom:1px;transition:color .2s,border-color .2s;}
-.email a:hover{color:var(--blue);border-bottom-color:var(--blue);}
-
-/* ── Footer ── */
-.foot{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:24px var(--gutter); font-family:var(--mono); font-size:11.5px; letter-spacing:0.06em;
-  color:var(--muted); position:relative; z-index:2; border-top:1px solid var(--line);
-}
-.foot .stamp{display:inline-flex;align-items:center;gap:9px;}
-.foot .stamp .dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(14,159,107,.5);animation:beat 3s ease-in-out infinite;}
-@keyframes beat{0%,100%{opacity:.5;}50%{opacity:1;}}
-
-@media (max-width:640px){
-  .brand-meta{display:none;}
-  .foot{flex-direction:column;gap:12px;text-align:center;}
-  h1.display{font-size:clamp(40px,12.5vw,62px);}
-  .center{padding-top:40px;padding-bottom:40px;}
+  font-size:clamp(52px,9vw,96px); line-height:1; letter-spacing:-0.02em;
+  color:var(--ink); margin-bottom:22px;
 }
 
-/* ── Reveal on load ── */
-.rv{opacity:0;transform:translateY(16px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1);}
+.status{
+  display:inline-flex; align-items:center; gap:14px;
+  font-family:var(--mono); font-size:11.5px; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:34px;
+}
+.status .dot{width:7px;height:7px;border-radius:50%;background:var(--green);position:relative;flex-shrink:0;}
+.status .dot::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--green);animation:ping 3s ease-out infinite;}
+@keyframes ping{0%{transform:scale(.5);opacity:.85;}100%{transform:scale(1.85);opacity:0;}}
+
+.contact{
+  font-family:var(--mono); font-size:12px; letter-spacing:0.04em; color:var(--muted-2);
+  border-bottom:1px solid transparent; padding-bottom:2px; transition:color .25s, border-color .25s;
+}
+.contact:hover{color:var(--ink); border-bottom-color:var(--line-2);}
+
+/* Legal — always present, regardless of content */
+.legal{
+  position:absolute; bottom:26px; left:0; right:0;
+  text-align:center;
+  font-family:var(--mono); font-size:11px; letter-spacing:0.08em; color:var(--muted-2);
+}
+
+@media (max-width:560px){
+  .word{font-size:clamp(46px,15vw,64px);}
+  .logo-hex{width:46px;height:46px;}
+}
+
+/* Reveal on load */
+.rv{opacity:0;transform:translateY(14px);transition:opacity 1s cubic-bezier(.2,.8,.2,1),transform 1s cubic-bezier(.2,.8,.2,1);}
 .rv.in{opacity:1;transform:none;}
-.d1{transition-delay:.08s;} .d2{transition-delay:.18s;} .d3{transition-delay:.28s;} .d4{transition-delay:.40s;}
+.d1{transition-delay:.12s;} .d2{transition-delay:.24s;} .d3{transition-delay:.36s;} .d4{transition-delay:.52s;}
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;}
   .rv{opacity:1;transform:none;}
+  .glow{opacity:.85;}
 }
 </style>
 </head>
 <body>
 
 <div class="stage">
-  <div class="grid-bg"></div>
-  <canvas id="net"></canvas>
+  <div class="grid"></div>
+  <div class="glow"></div>
 
-  <!-- Top bar -->
-  <header class="bar">
-    <a href="#" class="brand" aria-label="Vigilio">
-      <span class="logo-hex" aria-hidden="true"><span class="outer"></span><span class="inner"></span><span class="core"></span></span>
-      <span>vigilio</span>
-      <span class="brand-meta">Independent AI Lab</span>
-    </a>
-    <a class="bar-link" href="mailto:transform@vigilio.ai">Get in touch <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a>
-  </header>
-
-  <!-- Center -->
-  <main class="center">
-    <div class="block">
-      <div class="eyebrow rv"><span class="pulse"></span>Independent AI lab — active development</div>
-      <h1 class="display rv d1">Building something <em>worth showing.</em></h1>
-      <p class="sub rv d2">
-        Vigilio is an independent AI lab. This page stays quiet on purpose — what lands here
-        is built and shipped first, shown second, never promised. New work appears as it's
-        ready. If you're working on something hard, <strong>the door is open.</strong>
-      </p>
-      <div class="actions rv d3">
-        <a class="cta" href="mailto:transform@vigilio.ai"><span>Start a conversation</span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6h8M6 2l4 4-4 4"/></svg></a>
-        <span class="email">or write to <a href="mailto:transform@vigilio.ai">transform@vigilio.ai</a></span>
-      </div>
-    </div>
+  <main class="core">
+    <span class="logo-hex rv" aria-hidden="true"><span class="outer"></span><span class="inner"></span><span class="cored"></span></span>
+    <h1 class="word rv d1">vigilio</h1>
+    <div class="status rv d2"><span class="dot"></span>In quiet development</div>
+    <a class="contact rv d3" href="mailto:transform@vigilio.ai">transform@vigilio.ai</a>
   </main>
 
-  <!-- Footer -->
-  <footer class="foot rv d4">
-    <div>© 2026 Vigilio · Independent AI lab</div>
-    <div class="stamp"><span class="dot"></span>In active development · build 2026.06</div>
-  </footer>
+  <footer class="legal rv d4">© 2026 Vigilio. All rights reserved.</footer>
 </div>
 
 <script>
-/* Reveal on load (with fallback) */
 window.addEventListener('load',()=>document.querySelectorAll('.rv').forEach(el=>el.classList.add('in')));
 setTimeout(()=>document.querySelectorAll('.rv').forEach(el=>el.classList.add('in')),140);
-
-/* ── Living network with signal pulses (light theme) ── */
-(function net(){
-  const c=document.getElementById('net'); if(!c) return;
-  const ctx=c.getContext('2d');
-  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let W,H,dpr;
-  function resize(){
-    dpr=Math.min(window.devicePixelRatio||1,2);
-    W=c.clientWidth=c.offsetWidth; H=c.clientHeight=c.offsetHeight;
-    c.width=W*dpr; c.height=H*dpr; ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
-  }
-  resize(); window.addEventListener('resize',resize);
-
-  const N = window.innerWidth<720?34:64;
-  const MAXD=152;
-  const nodes=Array.from({length:N},(_,i)=>({
-    x:Math.random()*W, y:Math.random()*H,
-    vx:(Math.random()-.5)*0.16, vy:(Math.random()-.5)*0.16,
-    r:Math.random()*1.4+0.8,
-    type:i%9===0?'green':(i%13===0?'blue':'plain'),
-    lit:0
-  }));
-  const pulses=[]; // {a,b,t,speed,color}
-
-  function nearestFrom(i,exclude){
-    const a=nodes[i]; let best=-1,bd=MAXD*MAXD;
-    for(let j=0;j<N;j++){ if(j===i||j===exclude)continue; const b=nodes[j];
-      const dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
-      if(d2<bd&&d2>40){bd=d2;best=j;} }
-    return best;
-  }
-  function spawn(){
-    const i=Math.floor(Math.random()*N), b=nearestFrom(i,-1);
-    if(b>=0){ const col=Math.random()<0.5?'14,159,107':'43,91,215';
-      pulses.push({a:i,b:b,t:0,speed:0.011+Math.random()*0.012,color:col}); }
-  }
-
-  let acc=0;
-  function frame(){
-    ctx.clearRect(0,0,W,H);
-    for(const n of nodes){
-      n.x+=n.vx; n.y+=n.vy;
-      if(n.x<0||n.x>W)n.vx*=-1; if(n.y<0||n.y>H)n.vy*=-1;
-      if(n.lit>0)n.lit*=0.94;
-    }
-    /* edges */
-    ctx.lineWidth=0.6;
-    for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){
-      const a=nodes[i],b=nodes[j],dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;
-      if(d2<MAXD*MAXD){ const al=(1-Math.sqrt(d2)/MAXD)*0.26;
-        ctx.strokeStyle=`rgba(11,16,32,${al})`;
-        ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke(); }
-    }
-    /* pulses */
-    for(let k=pulses.length-1;k>=0;k--){
-      const p=pulses[k],a=nodes[p.a],b=nodes[p.b];
-      p.t+=p.speed;
-      const x=a.x+(b.x-a.x)*p.t, y=a.y+(b.y-a.y)*p.t;
-      const g=ctx.createLinearGradient(a.x,a.y,x,y);
-      g.addColorStop(0,`rgba(${p.color},0)`); g.addColorStop(1,`rgba(${p.color},0.5)`);
-      ctx.strokeStyle=g; ctx.lineWidth=1.4;
-      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(x,y);ctx.stroke();
-      ctx.shadowColor=`rgba(${p.color},1)`; ctx.shadowBlur=8;
-      ctx.fillStyle=`rgba(${p.color},1)`;
-      ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
-      if(p.t>=1){
-        nodes[p.b].lit=1; pulses.splice(k,1);
-        if(Math.random()<0.55 && pulses.length<20){
-          const nx=nearestFrom(p.b,p.a);
-          if(nx>=0)pulses.push({a:p.b,b:nx,t:0,speed:0.011+Math.random()*0.012,color:p.color});
-        }
-      }
-    }
-    /* nodes */
-    for(const n of nodes){
-      let fill='rgba(11,16,32,0.5)',glow=0;
-      if(n.type==='green'){fill='rgba(14,159,107,1)';glow=6;}
-      else if(n.type==='blue'){fill='rgba(43,91,215,1)';glow=6;}
-      if(n.lit>0.05){ glow=Math.max(glow,7*n.lit);
-        if(n.type==='plain')fill=`rgba(14,159,107,${0.45+0.55*n.lit})`; }
-      if(glow){ctx.shadowColor=fill;ctx.shadowBlur=glow;}
-      ctx.fillStyle=fill;
-      ctx.beginPath();ctx.arc(n.x,n.y,n.r+(glow?0.6:0),0,Math.PI*2);ctx.fill(); ctx.shadowBlur=0;
-    }
-    if(!reduced){
-      acc++;
-      if(acc%70===0 && pulses.length<13) spawn();
-      requestAnimationFrame(frame);
-    }
-  }
-
-  if(reduced){ frame(); }
-  else { spawn(); setTimeout(spawn,600); frame(); }
-})();
 </script>
 
-<!-- Analytics (carried over from the existing site; remove if not wanted) -->
+<!-- Analytics (carried over from the existing site; useful for seeing who visits during stealth — remove if not wanted) -->
 <script>
 !function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify reset people.set".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
 posthog.init('phc_yzuwWnDjV5AbyXRFJ8hBc9qegmyjyxfY9E95RhwkqHxn',{api_host:'https://us.i.posthog.com',defaults:'2026-01-30',person_profiles:'identified_only'});
