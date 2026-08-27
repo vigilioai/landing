@@ -1,0 +1,2817 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Making Engine Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — professional trading terminal
+   ══════════════════════════════════════════════════════════════════ */
+:root, :root[data-theme="dark"]{
+  --bg:#070a0f; --panel:#0d121a; --panel2:#111823; --panel3:#161f2c;
+  --line:#1b2532; --line2:#26344a;
+  --txt:#c5d1e0; --dim:#76869e; --dim3:#51627b; --hi:#eaf2fb;
+  --up:#19be87; --up-bg:#19be871a; --dn:#ea6177; --dn-bg:#ea61771a;
+  --warn:#e7a936; --warn-bg:#e7a93618; --cyan:#34bee5; --purple:#ac96ed;
+  --btc:#e4922f;
+  --e1:#34bee5; --e2:#ac96ed; --e3:#19be87; --e4:#e7a936;
+  --live:#19be87; --poll:#e7a936; --sim:#76869e;
+  --ui-scale:1;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --display:var(--mono); --display-w:600; --display-sp:.05em;
+  --vig-green:#0e9f6b; --vig-blue:#2b5bd7;
+  --r:3px;
+}
+/* Neutral daylight terminal — same information density, inverted ground. */
+:root[data-theme="light"]{
+  --bg:#e7ebf1; --panel:#ffffff; --panel2:#f4f7fa; --panel3:#e9edf3;
+  --line:#dce2ea; --line2:#c3ccd9;
+  --txt:#2b3444; --dim:#68738a; --dim3:#8895aa; --hi:#0d1520;
+  --up:#0a7b55; --up-bg:#0a7b551a; --dn:#d13337; --dn-bg:#d133371a;
+  --warn:#9c630d; --warn-bg:#9c630d18; --cyan:#0f6eb3; --purple:#6c47c9;
+  --btc:#a0590d;
+  --e1:#0f6eb3; --e2:#6c47c9; --e3:#0a7b55; --e4:#9c630d;
+  --live:#0a7b55; --poll:#9c630d; --sim:#68738a;
+}
+/* Vigilio — paper-and-ink palette lifted from vigilio.ai's own tokens. */
+:root[data-theme="vigilio"]{
+  --bg:#eef1f6; --panel:#ffffff; --panel2:#f6f8fb; --panel3:#eef1f6;
+  --line:#e2e6ee; --line2:#c8cfdc;
+  --txt:#3a4358; --dim:#6b7388; --dim3:#8b94ac; --hi:#0b1020;
+  --up:#0c7e55; --up-bg:#0c7e551a; --dn:#bf392b; --dn-bg:#bf392b1a;
+  --warn:#9a670e; --warn-bg:#9a670e18; --cyan:#2b5bd7; --purple:#6d4ac4;
+  --btc:#a0590d;
+  --e1:#2b5bd7; --e2:#6d4ac4; --e3:#0c7e55; --e4:#9a670e;
+  --live:#0c7e55; --poll:#9a670e; --sim:#6b7388;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --display:'Instrument Serif','Source Serif Pro',Georgia,serif;
+  --display-w:400; --display-sp:.01em;
+}
+/* Vigilio Dark -- the same ink-and-accent identity on an ink ground.
+   Brand green and blue are lifted toward the dark field for legibility;
+   the logo keeps the exact brand values via --vig-green / --vig-blue. */
+:root[data-theme="vigilio-dark"]{
+  --bg:#11131c; --panel:#161925; --panel2:#1c202e; --panel3:#24293a;
+  --line:#2c3247; --line2:#3f4762;
+  --txt:#c1cadb; --dim:#8b94ac; --dim3:#5d6783; --hi:#f6f8fb;
+  --up:#17b57c; --up-bg:#17b57c1a; --dn:#da695d; --dn-bg:#da695d1a;
+  --warn:#e0971a; --warn-bg:#e0971a18; --cyan:#7f9ce6; --purple:#9c84d7;
+  --btc:#e4922f;
+  --e1:#7f9ce6; --e2:#9c84d7; --e3:#17b57c; --e4:#e0971a;
+  --live:#17b57c; --poll:#e0971a; --sim:#8b94ac;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --display:'Instrument Serif','Source Serif Pro',Georgia,serif;
+  --display-w:400; --display-sp:.01em;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  /* zoom already divides the containing block for descendants, so a plain
+     100% here lands exactly on the viewport. Dividing again double-counts. */
+  zoom:var(--ui-scale);
+  height:100%;
+  background:var(--bg); color:var(--txt);
+  font:11px/1.45 var(--mono);
+  font-variant-numeric:tabular-nums; -webkit-font-smoothing:antialiased;
+  overflow:hidden;
+}
+.num{font-variant-numeric:tabular-nums}
+.up{color:var(--up)} .dn{color:var(--dn)} .dim{color:var(--dim)}
+.warn{color:var(--warn)} .cyan{color:var(--cyan)} .purple{color:var(--purple)}
+
+/* ── layout ─────────────────────────────────────────────────────── */
+#app{
+  display:grid; height:100%;
+  grid-template-columns:288px minmax(300px,368px) minmax(0,1fr);
+  grid-template-rows:auto minmax(0,1fr) auto;
+  gap:1px; background:var(--line);
+}
+#hdr{grid-column:1/-1}
+#ftr a{color:var(--cyan); text-decoration:none; margin-left:10px}
+#ftr a:hover{text-decoration:underline}
+#ftr{grid-column:1/-1; background:var(--panel); padding:5px 14px;
+  font-size:8.5px; letter-spacing:.09em; color:var(--dim); text-align:center}
+.col{background:var(--bg); display:flex; flex-direction:column; gap:1px; min-height:0; overflow:hidden}
+
+/* ── panel primitives ───────────────────────────────────────────── */
+.pnl{background:var(--panel); display:flex; flex-direction:column; min-height:0}
+.pnl.grow{flex:1}
+.pnl-h{
+  display:flex; align-items:center; gap:6px; padding:5px 8px;
+  background:var(--panel2); border-bottom:1px solid var(--line);
+  font-size:9.5px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--dim); font-weight:600; flex:0 0 auto;
+}
+.pnl-h .sp{margin-left:auto; text-transform:none; letter-spacing:0}
+.pnl-b{padding:7px 8px; overflow:auto; min-height:0}
+.pnl-b.tight{padding:0}
+.pnl-b::-webkit-scrollbar{width:7px;height:7px}
+.pnl-b::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+.pnl-b::-webkit-scrollbar-track{background:transparent}
+
+/* ── header ─────────────────────────────────────────────────────── */
+#hdr{background:var(--panel); display:flex; align-items:stretch; gap:1px}
+#hc-px{min-width:150px} #hc-vol{min-width:86px} #hc-fund{min-width:110px} #hc-clock{min-width:104px}
+.hcell{min-width:0; padding:6px 12px; display:flex; flex-direction:column; justify-content:center; gap:2px; border-right:1px solid var(--line)}
+.hlab{font-size:8.5px; letter-spacing:.1em; color:var(--dim); text-transform:uppercase}
+.hval{font-size:13px; color:var(--hi); font-weight:600}
+#fairPx{font-size:23px; letter-spacing:-.5px; line-height:1.1}
+#hdrBrand{display:flex; align-items:center; padding:6px 14px;
+  border-right:1px solid var(--line); background:var(--panel2)}
+#hdrBrand .btxt{display:flex; flex-direction:column; justify-content:center; gap:1px}
+#hdrBrand .vlock{display:none}
+
+/* ── Vigilio brand lockup — the hexagon is rebuilt from vigilio.ai's own
+      three-layer clip-path construction, retinted to the theme tokens ── */
+.vhex{width:30px; height:30px; position:relative; flex:0 0 auto}
+.vhex i{position:absolute; display:block;
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)}
+.vhex .o{inset:0; background:linear-gradient(135deg,var(--vig-green) 0%,var(--vig-blue) 100%);
+  box-shadow:0 4px 18px color-mix(in srgb,var(--vig-green) 30%,transparent)}
+.vhex .n{width:84%; height:84%; top:8%; left:8%; background:var(--panel)}
+.vhex .c{width:34%; height:34%; top:33%; left:33%; clip-path:none;
+  background:var(--vig-green); transform:rotate(45deg)}
+.mail-b{display:none}
+:root[data-theme^="vigilio"] .mail-a{display:none}
+:root[data-theme^="vigilio"] .mail-b{display:inline}
+.vword{font-family:var(--display); font-weight:400; font-size:23px; line-height:1;
+  letter-spacing:-.02em; color:var(--hi)}
+
+:root[data-theme^="vigilio"] #hdrBrand{
+  padding-left:16px;
+  background:linear-gradient(115deg,
+    color-mix(in srgb,var(--vig-green) 9%,var(--panel)) 0%,
+    color-mix(in srgb,var(--vig-blue) 7%,var(--panel)) 48%,
+    var(--panel) 100%);
+}
+:root[data-theme^="vigilio"] #hdrBrand .vlock{
+  display:flex; align-items:center; gap:10px;
+  padding-right:15px; margin-right:15px; border-right:1px solid var(--line2);
+}
+/* serif is reserved for the wordmark; the product name drops to a mono sub-label */
+:root[data-theme^="vigilio"] #hdrBrand b{
+  font-family:var(--mono); font-size:10px; font-weight:500;
+  letter-spacing:.09em; text-transform:uppercase; color:var(--txt);
+}
+#hdrBrand b{font-family:var(--display); font-weight:var(--display-w);
+  font-size:13.5px; color:var(--hi); letter-spacing:var(--display-sp); white-space:nowrap}
+#hdrBrand .sym{font-size:9.5px; color:var(--btc); letter-spacing:.14em; font-weight:700}
+#hdrBrand .ver{font-size:8px; color:var(--dim); letter-spacing:.04em; white-space:nowrap}
+#venueChips{display:flex; gap:3px; flex-wrap:wrap; max-width:290px}
+.vchip{
+  display:flex; align-items:center; gap:3px; padding:1px 5px; border-radius:2px;
+  background:var(--panel3); border:1px solid var(--line2); font-size:8.5px; color:var(--dim);
+}
+.vchip i{width:5px;height:5px;border-radius:50%;background:var(--dim);flex:0 0 auto}
+.vchip.on{color:var(--txt)} .vchip.on i{background:var(--up); box-shadow:0 0 5px var(--up)}
+.vchip.stale i{background:var(--warn)}
+#badge{
+  display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:2px;
+  font-size:10px; font-weight:700; letter-spacing:.1em; border:1px solid;
+}
+#badge i{width:6px;height:6px;border-radius:50%;animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+#badge.LIVE{color:var(--live);border-color:color-mix(in srgb,var(--up) 30%,transparent);background:color-mix(in srgb,var(--up) 7%,transparent)} #badge.LIVE i{background:var(--live)}
+#badge.POLLING{color:var(--poll);border-color:color-mix(in srgb,var(--warn) 30%,transparent);background:color-mix(in srgb,var(--warn) 7%,transparent)} #badge.POLLING i{background:var(--poll)}
+#badge.SIM{color:var(--sim);border-color:var(--line2);background:var(--panel3)} #badge.SIM i{background:var(--sim);animation:none}
+#badge.CONNECTING{color:var(--cyan);border-color:color-mix(in srgb,var(--cyan) 30%,transparent);background:color-mix(in srgb,var(--cyan) 7%,transparent)} #badge.CONNECTING i{background:var(--cyan)}
+#hdrRight{margin-left:auto; display:flex; align-items:center; gap:8px; padding:6px 12px}
+
+/* ── controls ───────────────────────────────────────────────────── */
+.btn{
+  background:var(--panel3); color:var(--txt); border:1px solid var(--line2);
+  border-radius:var(--r); padding:4px 9px; font:inherit; font-size:10px; cursor:pointer;
+  letter-spacing:.05em; transition:.12s;
+}
+.btn:hover{background:var(--line2); color:var(--hi)}
+.btn.danger{border-color:color-mix(in srgb,var(--dn) 27%,transparent); color:var(--dn)}
+.lbl-n{display:none}
+.btn.danger:hover{background:var(--dn-bg)}
+.sel{appearance:none; -webkit-appearance:none; background:var(--panel3); color:var(--txt);
+  border:1px solid var(--line2); border-radius:var(--r); font:inherit; font-size:10px;
+  padding:4px 26px 4px 10px; min-width:132px; cursor:pointer; letter-spacing:.05em;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:calc(100% - 14px) 52%, calc(100% - 10px) 52%;
+  background-size:4px 4px,4px 4px; background-repeat:no-repeat;}
+.sel:hover{background-color:var(--line2); color:var(--hi)}
+.sel option{background:var(--panel); color:var(--txt); padding:4px 10px}
+.seg{display:flex; border:1px solid var(--line2); border-radius:var(--r); overflow:hidden}
+.seg button{background:var(--panel3); color:var(--dim); border:0; border-right:1px solid var(--line2);
+  padding:4px 8px; font:inherit; font-size:10px; cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--line2); color:var(--hi)}
+
+/* ── engine selector ────────────────────────────────────────────── */
+.eng{
+  display:block; padding:6px 8px; border-bottom:1px solid var(--line);
+  cursor:pointer; transition:.12s; position:relative;
+}
+.eng:hover{background:var(--panel2)}
+.eng.live{background:linear-gradient(90deg,color-mix(in srgb,var(--up) 8%,transparent),transparent)}
+.eng.live::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--up)}
+.eng-t{display:flex; align-items:center; gap:6px}
+.eng-id{font-size:9px; font-weight:700; color:var(--dim); width:16px; flex:0 0 auto}
+.eng.live .eng-id{color:var(--up)}
+.eng-n{font-size:10.5px; color:var(--txt); font-weight:600}
+.eng.live .eng-n{color:var(--hi)}
+.eng-m{margin-left:auto; font-size:8px; letter-spacing:.08em; padding:1px 4px; border-radius:2px;
+  background:var(--panel3); color:var(--dim); border:1px solid var(--line)}
+.eng.live .eng-m{background:var(--up-bg); color:var(--up); border-color:color-mix(in srgb,var(--up) 27%,transparent)}
+.eng-d{font-size:8.5px; color:var(--dim); margin:2px 0 0 22px; line-height:1.4}
+.eng-s{display:flex; gap:10px; margin:3px 0 0 22px; font-size:9.5px}
+.eng-s b{font-weight:600}
+
+/* ── param sliders ──────────────────────────────────────────────── */
+#paramBox{max-height:26vh}
+#latBox{max-height:20vh}
+.prm{display:grid; grid-template-columns:1fr auto; gap:2px 6px; align-items:center; margin-bottom:6px}
+.prm label{font-size:9px; color:var(--dim); letter-spacing:.03em}
+.prm output{font-size:9.5px; color:var(--cyan); font-weight:600}
+.prm input[type=range]{grid-column:1/-1; width:100%; height:3px; -webkit-appearance:none;
+  background:var(--line2); border-radius:2px; outline:0}
+.prm input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:10px; height:10px;
+  border-radius:50%; background:var(--cyan); cursor:pointer; border:2px solid var(--panel)}
+.prm .hint{grid-column:1/-1; font-size:8px; color:var(--dim3); line-height:1.35; margin-top:-1px}
+
+/* ── LOB ────────────────────────────────────────────────────────── */
+#lob{font-size:11px; width:100%}
+.lrow{display:grid; grid-template-columns:22px 1fr 66px 52px; align-items:center; gap:4px;
+  padding:2.5px 8px; position:relative}
+.lrow .bar{position:absolute; top:1px; bottom:1px; right:0; opacity:.16; pointer-events:none}
+.lrow.ask .bar{background:var(--dn)} .lrow.bid .bar{background:var(--up)}
+.lrow .lv{color:var(--dim3); font-size:8.5px; z-index:1}
+.lrow .px{z-index:1; font-weight:600; font-size:11.5px}
+.lrow.ask .px{color:var(--dn)} .lrow.bid .px{color:var(--up)}
+.lrow .qt{z-index:1; text-align:right; color:var(--txt)}
+.lrow .mine{z-index:1; text-align:right; font-size:9.5px; color:var(--cyan); font-weight:600}
+.lrow.has-mine{background:color-mix(in srgb,var(--cyan) 6%,transparent)}
+.lrow.has-mine .px{text-shadow:0 0 8px currentColor}
+#lobMid{display:grid; grid-template-columns:22px 1fr 66px 52px; gap:4px; padding:5px 8px;
+  background:var(--panel2); border-top:1px solid var(--line2); border-bottom:1px solid var(--line2);
+  font-size:9.5px; color:var(--dim)}
+#lobMid .px{color:var(--hi); font-weight:600; font-size:11px}
+.lhdr{display:grid; grid-template-columns:22px 1fr 66px 52px; gap:4px; padding:3px 8px;
+  font-size:8px; letter-spacing:.09em; color:var(--dim3); text-transform:uppercase;
+  border-bottom:1px solid var(--line)}
+.lhdr .qt,.lhdr .mine{text-align:right}
+
+/* ── tape ───────────────────────────────────────────────────────── */
+.tp{display:grid; grid-template-columns:52px 1fr 60px 34px; gap:5px; padding:1.5px 8px; font-size:9.5px}
+.tp.b .px{color:var(--up)} .tp.s .px{color:var(--dn)}
+.tp .t{color:var(--dim3)} .tp .q{text-align:right;color:var(--dim)}
+.tp .k{text-align:right; font-size:8px; letter-spacing:.05em}
+.tp.tox{background:color-mix(in srgb,var(--dn) 8%,transparent)} .tp.tox .k{color:var(--dn)}
+.tp.mine{background:color-mix(in srgb,var(--cyan) 7%,transparent)} .tp.mine .k{color:var(--cyan)}
+
+/* ── metric tiles ───────────────────────────────────────────────── */
+.mgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(108px,1fr)); background:var(--panel)}
+.tile{background:var(--panel); padding:6px 8px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:1px; min-width:0}
+.tile .k{font-size:8px; letter-spacing:.08em; color:var(--dim); text-transform:uppercase;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.tile .v{font-size:14px; font-weight:600; color:var(--hi); line-height:1.15}
+.tile .v.sm{font-size:12px}
+.tile .s{font-size:8.5px; color:var(--dim3)}
+.mgrid.pnl-grid .tile{background:var(--panel2)}
+
+/* ── comparison table ───────────────────────────────────────────── */
+table.cmp{width:100%; border-collapse:collapse; font-size:9.5px}
+table.cmp th{font-size:8px; letter-spacing:.08em; color:var(--dim); text-transform:uppercase;
+  text-align:right; padding:3px 6px; border-bottom:1px solid var(--line); font-weight:600}
+table.cmp th:first-child{text-align:left}
+table.cmp td{padding:3px 6px; text-align:right; border-bottom:1px solid var(--line)}
+table.cmp td:first-child{text-align:left; color:var(--txt)}
+table.cmp tr.live td{background:color-mix(in srgb,var(--up) 5%,transparent)}
+table.cmp tr.live td:first-child{color:var(--hi); font-weight:600}
+
+/* ── compliance ─────────────────────────────────────────────────── */
+.acl{display:flex; align-items:center; gap:5px; padding:2px 0; font-size:9px}
+.acl .ic{width:11px; flex:0 0 auto; text-align:center; font-weight:700}
+.acl.ok .ic{color:var(--up)} .acl.no .ic{color:var(--dn)}
+.acl .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.acl.ok .nm{color:var(--txt)} .acl.no .nm{color:var(--dim3)}
+.acl .ct{font-size:8.5px; color:var(--dim)}
+.acl.no .ct{color:var(--dn); opacity:.75}
+.sep{height:1px; background:var(--line); margin:6px 0}
+
+/* ── log ────────────────────────────────────────────────────────── */
+.lg{padding:1.5px 8px; font-size:9px; display:flex; gap:6px}
+.lg .t{color:var(--dim3); flex:0 0 auto}
+.lg.warn{color:var(--warn)} .lg.err{color:var(--dn)} .lg.ok{color:var(--up)} .lg.info{color:var(--dim)}
+
+canvas{display:block; width:100%}
+
+/* Narrow or short viewports: tighten the rails, shrink the header furniture,
+   and let each column scroll rather than pushing panels off the screen. */
+@media (max-width:1640px){
+  #app{grid-template-columns:266px minmax(268px,322px) minmax(0,1fr)}
+  .mgrid{grid-template-columns:repeat(auto-fit,minmax(100px,1fr))}
+  .hcell{padding:5px 8px}
+  #hc-px{min-width:118px} #hc-vol{min-width:72px}
+  #hc-fund{min-width:94px} #hc-clock{min-width:86px}
+  #fairPx{font-size:19px}
+  #hdrRight{gap:5px; padding:5px 8px}
+  #hc-ven{display:none}
+  .lbl-w{display:none} .lbl-n{display:inline}
+  .sel{min-width:100px; padding:4px 21px 4px 8px}
+}
+@media (max-width:1400px){
+  #hdrBrand .ver{display:none}
+  #hc-clock{display:none}
+  .hcell{padding:4px 6px}
+  #fairPx{font-size:17px}
+}
+@media (max-width:1320px){
+  #app{grid-template-columns:244px minmax(238px,286px) minmax(0,1fr)}
+  .mgrid{grid-template-columns:repeat(auto-fit,minmax(92px,1fr))}
+  #hc-vol{display:none}
+  #hdrBrand .vword{font-size:19px}
+  .sel{min-width:92px; font-size:9.5px}
+}
+/* Something has to give when the viewport is shorter than the stack. Scrolling
+   a column beats silently clipping the session totals off the bottom. */
+@media (max-width:1640px), (max-height:940px){
+  .col{overflow-y:auto}
+  .pnl.grow{min-height:170px}
+}
+.chart-grid{display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1px; background:var(--line); height:100%}
+.pnl-b.fill{height:100%; overflow:hidden}
+.chart{background:var(--panel); padding:0; display:flex; flex-direction:column; min-height:0}
+.chart canvas{flex:1; min-height:0}
+.chart .ch-h{display:flex; align-items:baseline; gap:6px; padding:4px 8px 0}
+.chart .ch-t{font-size:8.5px; letter-spacing:.08em; color:var(--dim); text-transform:uppercase}
+.chart .ch-v{font-size:10px; margin-left:auto; color:var(--txt)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════ -->
+  <div id="hdr">
+    <div id="hdrBrand">
+      <span class="vlock">
+        <span class="vhex" aria-hidden="true"><i class="o"></i><i class="n"></i><i class="c"></i></span>
+        <span class="vword">vigilio</span>
+      </span>
+      <span class="btxt">
+        <b>MARKET MAKING ENGINE Lab</b>
+        <span class="sym">BTC/USD</span>
+        <span class="ver">Alpha version by <span
+          class="mail-a">waltertsai@gmail.com</span><span
+          class="mail-b">walter@vigilio.ai</span></span>
+      </span>
+    </div>
+    <div class="hcell" id="hc-px">
+      <div class="hlab">Composite Fair Price</div>
+      <div id="fairPx" class="num">—</div>
+    </div>
+    <div class="hcell" id="hc-vol">
+      <div class="hlab">Δ 60s</div><div id="fairChg" class="hval num">—</div>
+      <div class="hlab" style="margin-top:1px">σ /√s</div><div id="fairSigma" class="hval num" style="font-size:10.5px">—</div>
+    </div>
+    <div class="hcell" id="hc-ven"><div class="hlab">Reference Venues</div><div id="venueChips"></div></div>
+    <div class="hcell" id="hc-fund">
+      <div class="hlab">Perp Funding /8h</div><div id="fundingRate" class="hval num">—</div>
+      <div class="hlab" style="margin-top:1px">Next · Basis</div><div id="fundingCd" class="hval num" style="font-size:10px">—</div>
+    </div>
+    <div class="hcell" id="hc-clock">
+      <div class="hlab">Our Book Staleness</div><div id="staleness" class="hval num">—</div>
+      <div class="hlab" style="margin-top:1px">Sim Clock</div><div id="simClock" class="hval num" style="font-size:10px">—</div>
+    </div>
+    <div id="hdrRight">
+      <div id="badge" class="CONNECTING"><i></i><span>CONNECTING</span></div>
+      <select class="sel" id="scaleSel" title="UI scale" aria-label="UI scale">
+        <option value="auto">Auto</option>
+        <option value="1">100%</option>
+        <option value="1.1">110%</option>
+        <option value="1.25">125%</option>
+        <option value="1.4">140%</option>
+        <option value="1.55">155%</option>
+      </select>
+      <select class="sel" id="themeSel" title="Theme" aria-label="Theme">
+        <option value="dark">Dark</option>
+        <option value="vigilio">Vigilio</option>
+        <option value="vigilio-dark">Vigilio Dark</option>
+        <option value="light">Light</option>
+      </select>
+      <div class="seg" id="speedSeg">
+        <button data-sp="1" class="on">1×</button><button data-sp="3">3×</button><button data-sp="10">10×</button>
+      </div>
+      <button class="btn danger" id="resetBtn"><span class="lbl-w">RESET SESSION</span><span class="lbl-n">RESET</span></button>
+    </div>
+  </div>
+
+  <!-- ══ LEFT RAIL ═══════════════════════════════════════════════ -->
+  <div class="col">
+    <div class="pnl">
+      <div class="pnl-h">Market Making Engine<span class="sp dim">select → LIVE</span></div>
+      <div class="pnl-b tight" id="engineList"></div>
+    </div>
+    <div class="pnl">
+      <div class="pnl-h">Engine Parameters</div>
+      <div class="pnl-b" id="paramBox"></div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">Execution Latency &amp; Race<span class="sp dim" id="latMeta">—</span></div>
+      <div class="pnl-b" id="latBox"></div>
+    </div>
+    <div class="pnl grow">
+      <div class="pnl-h">Information Barrier<span class="sp" id="barrierState" style="color:var(--up)">● ENFORCED</span></div>
+      <div class="pnl-b" id="complianceBox"></div>
+    </div>
+  </div>
+
+  <!-- ══ CENTER ══════════════════════════════════════════════════ -->
+  <div class="col">
+    <div class="pnl">
+      <div class="pnl-h">Our Exchange · Order Book<span class="sp dim" id="lobMeta">tick $1</span></div>
+      <div class="pnl-b tight">
+        <div class="lhdr"><span>LVL</span><span>PRICE</span><span class="qt">SIZE (BTC)</span><span class="mine">MINE</span></div>
+        <div id="lobAsks"></div>
+        <div id="lobMid"><span></span><span class="px" id="midPx">—</span><span class="qt" id="midSpread">—</span><span class="mine" id="midBps">—</span></div>
+        <div id="lobBids"></div>
+      </div>
+    </div>
+    <div class="pnl grow">
+      <div class="pnl-h">Public Trade Tape<span class="sp dim">aggressor · toxic flagged</span></div>
+      <div class="pnl-b tight" id="tape" style="overflow:auto"></div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto; max-height:160px">
+      <div class="pnl-h">Event Log</div>
+      <div class="pnl-b tight" id="eventLog" style="overflow:auto; max-height:132px"></div>
+    </div>
+  </div>
+
+  <!-- ══ RIGHT ═══════════════════════════════════════════════════ -->
+  <div class="col">
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">P&amp;L Decomposition<span class="sp dim" id="pnlEngName">—</span></div>
+      <div class="pnl-b tight"><div class="mgrid pnl-grid" id="pnlGrid"></div></div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">Effectiveness · Risk · Toxicity</div>
+      <div class="pnl-b tight"><div class="mgrid" id="metricGrid"></div></div>
+    </div>
+    <div class="pnl grow">
+      <div class="pnl-h">Analytics<span class="sp dim">markout curve = the market-maker's diagnostic</span></div>
+      <div class="pnl-b tight fill">
+        <div class="chart-grid">
+          <div class="chart"><div class="ch-h"><span class="ch-t">Cumulative P&amp;L (stacked)</span><span class="ch-v" id="chvEq">—</span></div><canvas id="chEquity"></canvas></div>
+          <div class="chart"><div class="ch-h"><span class="ch-t">Inventory (BTC)</span><span class="ch-v" id="chvInv">—</span></div><canvas id="chInv"></canvas></div>
+          <div class="chart"><div class="ch-h"><span class="ch-t">VPIN · Flow Toxicity</span><span class="ch-v" id="chvVpin">—</span></div><canvas id="chVpin"></canvas></div>
+          <div class="chart"><div class="ch-h"><span class="ch-t">Markout Curve (bps)</span><span class="ch-v" id="chvMk">—</span></div><canvas id="chMarkout"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">Engine Comparison<span class="sp dim">same order flow · shadow fills are queue-adjusted estimates, and shadows see the live engine's quotes in the book</span></div>
+      <div class="pnl-b tight"><table class="cmp" id="cmpTable"></table></div>
+    </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">Session Accumulated<span class="sp dim">in-memory only · cleared on reload</span></div>
+      <div class="pnl-b tight"><div class="mgrid" id="sessionGrid"></div></div>
+    </div>
+  </div>
+
+  <div id="ftr">© 2026 Vigilio. All rights reserved. <a href="manual.html" target="_blank" rel="noopener">維運手冊 ↗</a></div>
+</div>
+
+<script>
+'use strict';
+/* ══════════════════════════════════════════════════════════════════════════
+   MARKET MAKING ENGINE Lab — single-file market-making engine lab
+   Layering (dependency flows one way only):
+       core ← adapters ← sim ← engines ← slices ← shell
+   Each layer is an IIFE that receives its dependencies as arguments; a layer
+   physically cannot reference an identifier from a layer above it.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ core/  — models · enums · errors · config.  Depends on NOTHING.       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Core = (() => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 全系統共用的不可變詞彙表 — 列舉、領域錯誤、常數
+    OWNS       : 型別常數與交易所規格
+    DEPENDS_ON : —
+    FAILS      : —（純宣告）
+    IDEMPOTENT : YES
+    SIZE_LIMIT : 120 行
+    ═══════════════════════════════════════════════════════════════════════ */
+
+  const Side      = Object.freeze({ BUY:'BUY', SELL:'SELL' });
+  const Intent    = Object.freeze({ PLACE:'PLACE', CANCEL:'CANCEL', TAKE:'TAKE', HEDGE:'HEDGE' });
+  const FeedState = Object.freeze({ CONNECTING:'CONNECTING', LIVE:'LIVE', POLLING:'POLLING', SIM:'SIM' });
+  const Actor     = Object.freeze({ NOISE_LP:'NOISE_LP', RETAIL:'RETAIL', ARB:'ARB', MM:'MM' });
+  const Mode      = Object.freeze({ LIVE:'LIVE', SHADOW:'SHADOW' });
+
+  class DomainError            extends Error { constructor(m){ super(m); this.name=this.constructor.name; } }
+  class FrontRunViolationError extends DomainError {}
+  class FeedStaleError         extends DomainError {}
+  class RiskLimitBreachError   extends DomainError {}
+
+  /* Our exchange is a second-tier venue: coarser tick than Binance's $0.01
+     (=0.0013 bps @ 79k, a pure queue game). $1 tick ≈ 0.13 bps makes spread
+     capture economically real — which is the whole point of the demo.       */
+  const CFG = Object.freeze({
+    TICK:            1.0,
+    LOT:             0.001,
+    LEVELS:          5,
+    BOOK_DEPTH:      12,        // levels actually maintained per side
+    MAKER_FEE_BPS:  -0.2,       // negative = rebate paid to us
+    TAKER_FEE_BPS:   5.0,       // retail taker
+    MM_TAKER_BPS:    1.0,       // our professional taker tier
+    EXT_TAKER_BPS:   1.0,       // external hedge venue, top MM tier
+    SIM_DT:          10,        // ms of simulated time per step
+    FUNDING_HOURS:   8,
+    MARKOUT_TAUS:    Object.freeze([0.1, 0.5, 1, 5, 15, 30]),  // seconds
+    VPIN_BUCKET:     0.25,      // BTC per volume bucket
+    VPIN_WINDOW:     20,        // buckets in the VPIN average
+    TAPE_MAX:        200,
+    SERIES_LEN:      1800,      // ring-buffer samples (~3 min @ 100ms)
+  });
+
+  return Object.freeze({ Side, Intent, FeedState, Actor, Mode, CFG,
+    DomainError, FrontRunViolationError, FeedStaleError, RiskLimitBreachError });
+})();
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ util/ — deterministic RNG, heap, ring buffers, stats, formatting      ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const U = (() => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 熱路徑上零配置的數值/資料結構原語
+    OWNS       : 亂數種子、事件優先佇列、環形緩衝
+    DEPENDS_ON : —
+    PERFORMANCE: heap push/pop O(log n)；Ring push O(1) 且不配置記憶體
+    SIZE_LIMIT : 200 行
+    ═══════════════════════════════════════════════════════════════════════ */
+
+  /* xorshift128+ — seeded so a session is reproducible after RESET */
+  function rng(seed = 0x9e3779b9) {
+    let s0 = seed >>> 0 || 1, s1 = (seed * 0x85ebca6b) >>> 0 || 2;
+    const next = () => {
+      let x = s0, y = s1; s0 = y;
+      x ^= x << 23; x >>>= 0;
+      x ^= x >>> 17; x ^= y; x ^= y >>> 26; x >>>= 0;
+      s1 = x; return ((s0 + s1) >>> 0) / 4294967296;
+    };
+    let spare = null;
+    const normal = () => {                       // Marsaglia polar
+      if (spare !== null) { const v = spare; spare = null; return v; }
+      let u, v, s;
+      do { u = next() * 2 - 1; v = next() * 2 - 1; s = u*u + v*v; } while (s >= 1 || s === 0);
+      const m = Math.sqrt(-2 * Math.log(s) / s); spare = v * m; return u * m;
+    };
+    return {
+      next, normal,
+      expo:      (lam) => -Math.log(1 - next()) / lam,
+      lognormal: (mu, sig) => Math.exp(mu + sig * normal()),
+      int:       (n) => (next() * n) | 0,
+      bool:      (p) => next() < p,
+      range:     (a, b) => a + next() * (b - a),
+      reseed:    (sd) => { s0 = sd >>> 0 || 1; s1 = (sd * 0x85ebca6b) >>> 0 || 2; spare = null; },
+    };
+  }
+
+  /* Binary min-heap over {t,...} — the simulator's event queue. */
+  class Heap {
+    constructor() { this.a = []; }
+    get size() { return this.a.length; }
+    peek()     { return this.a[0]; }
+    push(e) {
+      const a = this.a; a.push(e);
+      let i = a.length - 1;
+      while (i > 0) { const p = (i - 1) >> 1; if (a[p].t <= a[i].t) break; [a[p], a[i]] = [a[i], a[p]]; i = p; }
+    }
+    pop() {
+      const a = this.a, top = a[0], last = a.pop();
+      if (a.length) {
+        a[0] = last; let i = 0;
+        for (;;) {
+          const l = 2*i + 1, r = l + 1; let m = i;
+          if (l < a.length && a[l].t < a[m].t) m = l;
+          if (r < a.length && a[r].t < a[m].t) m = r;
+          if (m === i) break; [a[m], a[i]] = [a[i], a[m]]; i = m;
+        }
+      }
+      return top;
+    }
+    clear() { this.a.length = 0; }
+  }
+
+  /* Fixed-capacity Float64 ring — no allocation, no GC churn on the hot path. */
+  class Ring {
+    constructor(n) { this.buf = new Float64Array(n); this.n = n; this.i = 0; this.len = 0; }
+    push(v) { this.buf[this.i] = v; this.i = (this.i + 1) % this.n; if (this.len < this.n) this.len++; }
+    at(k)   { return this.buf[(this.i - this.len + k + this.n * 2) % this.n]; }   // k=0 oldest
+    last(k = 0) { return this.len ? this.buf[(this.i - 1 - k + this.n * 2) % this.n] : 0; }
+    mean()  { let s = 0; for (let k = 0; k < this.len; k++) s += this.at(k); return this.len ? s / this.len : 0; }
+    std()   { const m = this.mean(); let s = 0; for (let k = 0; k < this.len; k++) { const d = this.at(k) - m; s += d*d; }
+              return this.len > 1 ? Math.sqrt(s / (this.len - 1)) : 0; }
+    minmax(){ let lo = Infinity, hi = -Infinity;
+              for (let k = 0; k < this.len; k++) { const v = this.at(k); if (v < lo) lo = v; if (v > hi) hi = v; }
+              return this.len ? [lo, hi] : [0, 1]; }
+    clear() { this.i = 0; this.len = 0; this.buf.fill(0); }
+  }
+
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+  const lerp  = (a, b, t) => a + (b - a) * t;
+
+  /* Abramowitz–Stegun 7.1.26 — used by Bulk Volume Classification. */
+  function erf(x) {
+    const s = Math.sign(x); x = Math.abs(x);
+    const t = 1 / (1 + 0.3275911 * x);
+    const y = 1 - ((((1.061405429*t - 1.453152027)*t + 1.421413741)*t - 0.284496736)*t + 0.254829592) * t * Math.exp(-x*x);
+    return s * y;
+  }
+  const normCdf = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+
+  /* Median + MAD — outlier rejection across reference venues. */
+  function median(arr) {
+    if (!arr.length) return 0;
+    const a = arr.slice().sort((x, y) => x - y), m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+
+  const F = {
+    usd:  (v, d = 2) => (v < 0 ? '-' : '') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }),
+    sgn:  (v, d = 2) => (v >= 0 ? '+' : '−') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }),
+    px:   (v) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+    qty:  (v, d = 3) => v.toFixed(d),
+    bps:  (v, d = 2) => (v >= 0 ? '' : '−') + Math.abs(v).toFixed(d) + ' bp',
+    pct:  (v, d = 1) => (v * 100).toFixed(d) + '%',
+    num:  (v, d = 2) => v.toFixed(d),
+    int:  (v) => Math.round(v).toLocaleString('en-US'),
+    clock:(ms) => { const s = Math.floor(ms / 1000); return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; },
+    cd:   (ms) => { if (ms < 0) ms = 0; const s = Math.floor(ms/1000);
+                    return `${String(Math.floor(s/3600)).padStart(2,'0')}h${String(Math.floor(s/60)%60).padStart(2,'0')}m`; },
+    hhmmss:(d) => d.toTimeString().slice(0, 8),
+  };
+
+  return Object.freeze({ rng, Heap, Ring, clamp, lerp, erf, normCdf, median, F });
+})();
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ adapters/ — external market data.  Depends on core + util only.       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Feed = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 把多家交易所的公開行情合成為單一 fair price，並在連線劣化時
+                 沿 LIVE → POLLING → SIM 階梯自動降級／恢復
+    OWNS       : WebSocket 連線生命週期、各場館基差校正、複合波動率估計
+    DEPENDS_ON : Core.CFG, U.Ring, U.median
+    EMITS      : FairTick v1 { mid, micro, sigma, funding, venues, state }
+    DATA_READS : Binance spot/perp · Coinbase Exchange · OKX（皆為公開端點）
+    FAILS      : FeedStaleError（僅記錄，不中斷 — 降級是正常路徑）
+    PERFORMANCE: 合成 P99 < 0.2ms；重連退避 1s→16s
+    IDEMPOTENT : NO（持有連線）
+    SECURITY   : PUBLIC — 只讀公開行情，不帶任何金鑰
+    SIZE_LIMIT : 260 行
+    ADR_REFS   : ADR-002 行情降級階梯
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { FeedState } = Core;
+
+  // Binance moved USDS-M futures streams to /public/ws on 2026-04-23. The legacy
+  // /ws path still completes the handshake but never pushes @markPrice — a silent
+  // failure that would leave the funding-carry engine permanently blind.
+  const WS_URL = {
+    binance:  'wss://stream.binance.com:9443/stream?streams=btcusdt@bookTicker/btcusdt@aggTrade',
+    binPerp:  'wss://fstream.binance.com/public/ws/btcusdt@markPrice@1s',
+    coinbase: 'wss://ws-feed.exchange.coinbase.com',
+    okx:      'wss://ws.okx.com:8443/ws/v5/public',
+  };
+  const REST = {
+    binance:  'https://api.binance.com/api/v3/ticker/bookTicker?symbol=BTCUSDT',
+    coinbase: 'https://api.exchange.coinbase.com/products/BTC-USD/ticker',
+    binPerp:  'https://fapi.binance.com/fapi/v1/premiumIndex?symbol=BTCUSDT',
+  };
+
+  function create(log) {
+    const mk = (key, name) => ({ key, name, bid:0, ask:0, bidQty:0, askQty:0,
+                                 ts:0, src:'', basis:0, ok:false });
+    const venues = [ mk('binance','BINANCE'), mk('coinbase','COINBASE'), mk('okx','OKX') ];
+    const byKey  = Object.fromEntries(venues.map(v => [v.key, v]));
+    const socks  = {};
+    const timers = new Set();
+    let ivPoll = 0, ivTick = 0;
+    const funding = { rate:0.0001, nextTime:0, markPx:0, indexPx:0, premiumBps:0, ts:0, ok:false };
+
+    let state = FeedState.CONNECTING, micro = 0, mid = 0, sigma = 6, ewmaVar = 0;
+    let lastSample = 0, everLive = false, blendUntil = 0, synthPx = 0, stopped = false;
+    const hist  = new U.Ring(Core.CFG.SERIES_LEN);          // composite samples @100ms
+    const srng  = U.rng(0xC0FFEE);
+    const subs  = [];
+
+    /* ── venue ingest ─────────────────────────────────────────────────── */
+    function put(v, bid, ask, bq, aq, src) {
+      if (!(bid > 0) || !(ask > 0) || ask < bid) return;
+      v.bid = bid; v.ask = ask; v.bidQty = bq || 1; v.askQty = aq || 1;
+      v.ts = Date.now(); v.src = src; v.ok = true;
+    }
+    const microOf = (v) => (v.bid * v.askQty + v.ask * v.bidQty) / (v.bidQty + v.askQty);
+
+    /* ── composite fair price ─────────────────────────────────────────── */
+    function compose() {
+      const now = Date.now();
+      const fresh = venues.filter(v => v.ok && now - v.ts < 6000);
+      if (!fresh.length) return false;
+
+      const raws = fresh.map(microOf);
+      const med  = U.median(raws);
+      const mad  = U.median(raws.map(p => Math.abs(p - med))) || med * 1e-5;
+
+      let wsum = 0, psum = 0, bsum = 0, bw = 0;
+      for (let i = 0; i < fresh.length; i++) {
+        const v = fresh[i], raw = raws[i];
+        if (Math.abs(raw - med) > 5 * mad + med * 2e-4) continue;      // reject outlier venue
+        const spreadBps = Math.max((v.ask - v.bid) / raw * 1e4, 0.02);
+        const depth     = Math.sqrt(Math.max(v.bidQty + v.askQty, 1e-6));
+        const w = (1 / spreadBps) * depth * Math.exp(-(now - v.ts) / 2500);
+        wsum += w; psum += (raw - v.basis) * w;
+        bsum += (v.bid + v.ask) / 2 * w; bw += w;
+      }
+      if (wsum <= 0) return false;
+
+      const nextMicro = psum / wsum, nextMid = bsum / bw;
+      // Persistent per-venue basis (USDT vs USD, venue skew) is learned slowly and
+      // removed, so the composite is not dragged by one venue's structural offset.
+      for (let i = 0; i < fresh.length; i++) fresh[i].basis += 0.002 * (raws[i] - nextMicro - fresh[i].basis);
+
+      if (now < blendUntil && micro > 0) {                             // smooth SIM → LIVE handover
+        const t = 1 - (blendUntil - now) / 2000;
+        micro = U.lerp(micro, nextMicro, U.clamp(t, 0, 1));
+        mid   = U.lerp(mid || nextMid, nextMid, U.clamp(t, 0, 1));
+      } else { micro = nextMicro; mid = nextMid; }
+      return true;
+    }
+
+    /* σ as $ per √second. Seeded from a prior, not from the first return — a
+       SIM→LIVE handover jump would otherwise poison the estimator for minutes.
+       Returns are winsorised and time-normalised, and the blend window is skipped. */
+    const SIG_PRIOR = 7.5e-5;                          // ≈ 42% annualised, per √s
+    function sample() {
+      const now = Date.now();
+      if (now - lastSample < 100 || !(micro > 0)) return;
+      const dt = (now - lastSample) / 1000;
+      if (hist.len && lastSample && now >= blendUntil && dt > 0 && dt < 2) {
+        const prev = hist.last();
+        if (prev > 0) {
+          const r = U.clamp(Math.log(micro / prev), -0.005, 0.005) / Math.sqrt(dt);
+          ewmaVar = ewmaVar ? 0.975 * ewmaVar + 0.025 * r * r : SIG_PRIOR * SIG_PRIOR;
+          sigma   = U.clamp(Math.sqrt(ewmaVar) * micro, micro * 2e-5, micro * 4e-4);
+        }
+      }
+      hist.push(micro); lastSample = now;
+    }
+
+    /* ── synthetic fallback: GBM + compound-Poisson jumps ─────────────── */
+    function synth() {
+      if (!(synthPx > 0)) synthPx = micro > 0 ? micro : 79500;
+      const dt = 0.1, volPerYr = 0.42;
+      const s = volPerYr / Math.sqrt(365 * 86400);
+      let px = synthPx * Math.exp(s * Math.sqrt(dt) * srng.normal() - 0.5 * s * s * dt);
+      if (srng.bool(0.004)) px *= 1 + (srng.next() < 0.5 ? -1 : 1) * srng.range(0.0004, 0.0018);
+      synthPx = px;
+      const half = px * 6e-6;
+      for (const v of venues) put(v, px - half * srng.range(.6, 1.6), px + half * srng.range(.6, 1.6),
+                                  srng.range(.3, 4), srng.range(.3, 4), 'sim');
+      funding.rate      = U.clamp(funding.rate + srng.normal() * 2e-6, -0.0009, 0.0016);
+      funding.markPx    = px * (1 + funding.rate * 0.35);
+      funding.indexPx   = px;
+      funding.premiumBps= (funding.markPx - px) / px * 1e4;
+      funding.nextTime  = Math.ceil(Date.now() / 288e5) * 288e5;
+      funding.ts = Date.now(); funding.ok = true;
+    }
+
+    /* ── state machine ────────────────────────────────────────────────── */
+    function evaluate() {
+      const now = Date.now();
+      const wsMax   = state === FeedState.LIVE    ? 9000 : 3000;      // hysteresis
+      const restMax = state === FeedState.POLLING ? 12000 : 6000;
+      const wsFresh   = venues.some(v => v.src === 'ws'   && now - v.ts < wsMax);
+      const restFresh = venues.some(v => v.src === 'rest' && now - v.ts < restMax);
+      const next = wsFresh ? FeedState.LIVE
+                 : restFresh ? FeedState.POLLING
+                 : (everLive || now - t0 > 9000) ? FeedState.SIM
+                 : FeedState.CONNECTING;
+      if (next !== state) {
+        const from = state; state = next;
+        blendUntil = now + 2000;                       // skip returns across ANY transition
+        if (next === FeedState.SIM) synthPx = micro > 0 ? micro : synthPx;   // resume from reality
+        if (next === FeedState.LIVE || next === FeedState.POLLING) everLive = true;
+        log(`feed ${from} → ${next}`, next === FeedState.LIVE ? 'ok' : next === FeedState.SIM ? 'warn' : 'info');
+      }
+    }
+
+    /* ── transports ───────────────────────────────────────────────────── */
+    function connect(key, url, onMsg, onOpen) {
+      if (stopped) return;
+      let ws;
+      try { ws = new WebSocket(url); } catch { return retry(key, url, onMsg, onOpen, 4000); }
+      socks[key] = ws;
+      let backoff = 1000;
+      ws.onopen    = () => { backoff = 1000; if (onOpen) try { ws.send(onOpen); } catch {} };
+      ws.onmessage = (e) => { try { onMsg(JSON.parse(e.data)); } catch {} };
+      ws.onerror   = () => {};
+      ws.onclose   = () => { if (!stopped) retry(key, url, onMsg, onOpen, backoff = Math.min(backoff * 2, 16000)); };
+    }
+    const retry = (k, u, m, o, ms) => {
+      const id = setTimeout(() => { timers.delete(id); if (!stopped) connect(k, u, m, o); }, ms);
+      timers.add(id);
+    };
+
+    function openAll() {
+      connect('binance', WS_URL.binance, (m) => {
+        const d = m.data || m;
+        if (d.e === 'aggTrade' || d.b === undefined) return;
+        put(byKey.binance, +d.b, +d.a, +d.B, +d.A, 'ws');
+      });
+      connect('coinbase', WS_URL.coinbase, (d) => {
+        if (d.type !== 'ticker') return;
+        put(byKey.coinbase, +d.best_bid, +d.best_ask, +d.best_bid_size, +d.best_ask_size, 'ws');
+      }, JSON.stringify({ type:'subscribe', product_ids:['BTC-USD'], channels:['ticker'] }));
+      connect('okx', WS_URL.okx, (d) => {
+        if (!d.data || !d.arg) return;
+        if (d.arg.channel === 'books5') {
+          const b = d.data[0].bids[0], a = d.data[0].asks[0];
+          put(byKey.okx, +b[0], +a[0], +b[1], +a[1], 'ws');
+        } else if (d.arg.channel === 'funding-rate') {
+          const f = d.data[0];
+          funding.rate = +f.fundingRate; funding.nextTime = +f.fundingTime;
+          funding.ts = Date.now(); funding.ok = true;
+        }
+      }, JSON.stringify({ op:'subscribe', args:[
+          { channel:'books5', instId:'BTC-USDT' }, { channel:'funding-rate', instId:'BTC-USDT-SWAP' }] }));
+      connect('binPerp', WS_URL.binPerp, (d) => {
+        if (d.e !== 'markPriceUpdate') return;
+        funding.rate = +d.r; funding.nextTime = +d.T;
+        funding.markPx = +d.p; funding.indexPx = +d.i;
+        funding.premiumBps = (funding.markPx - funding.indexPx) / funding.indexPx * 1e4;
+        funding.ts = Date.now(); funding.ok = true;
+      });
+    }
+
+    async function poll() {
+      if (stopped) return;
+      const need = state !== FeedState.LIVE;
+      if (need) {
+        try { const r = await (await fetch(REST.binance)).json();
+              put(byKey.binance, +r.bidPrice, +r.askPrice, +r.bidQty, +r.askQty, 'rest'); } catch {}
+        try { const r = await (await fetch(REST.coinbase)).json();
+              put(byKey.coinbase, +r.bid, +r.ask, 1, 1, 'rest'); } catch {}
+      }
+      if (need || !funding.ok || Date.now() - funding.ts > 30000) {
+        try { const r = await (await fetch(REST.binPerp)).json();
+              funding.rate = +r.lastFundingRate; funding.nextTime = +r.nextFundingTime;
+              funding.markPx = +r.markPrice; funding.indexPx = +r.indexPrice;
+              funding.premiumBps = (funding.markPx - funding.indexPx) / funding.indexPx * 1e4;
+              funding.ts = Date.now(); funding.ok = true; } catch {}
+      }
+    }
+
+    /* ── tick ─────────────────────────────────────────────────────────── */
+    const t0 = Date.now();
+    function tick() {
+      evaluate();
+      if (state === FeedState.SIM || state === FeedState.CONNECTING) synth();
+      compose(); sample();
+      const f = snapshot();
+      for (const s of subs) s(f);
+    }
+
+    function snapshot() {
+      const now = Date.now();
+      let chg60 = 0;
+      if (hist.len > 600) { const p0 = hist.at(hist.len - 601); if (p0 > 0) chg60 = micro / p0 - 1; }
+      return { micro, mid, sigma, chg60, state, funding,
+               venues: venues.map(v => ({ name:v.name, ok:v.ok && now - v.ts < 6000,
+                                          stale: now - v.ts > 2500, src:v.src, basis:v.basis })) };
+    }
+
+    return {
+      start() {
+        openAll(); poll();
+        ivPoll = setInterval(poll, 1200); ivTick = setInterval(tick, 100); tick();
+      },
+      /** Release every outbound connection and timer. Detaching onclose first
+       *  matters: otherwise close() triggers the reconnect path we just armed. */
+      stop() {
+        stopped = true;
+        clearInterval(ivPoll); clearInterval(ivTick); ivPoll = ivTick = 0;
+        for (const id of timers) clearTimeout(id);
+        timers.clear();
+        for (const k of Object.keys(socks)) {
+          const w = socks[k];
+          delete socks[k];
+          if (!w) continue;
+          w.onopen = w.onmessage = w.onerror = w.onclose = null;
+          try { w.close(1000, 'page closed'); } catch (e) {}
+        }
+        subs.length = 0;
+        hist.clear();
+      },
+      onTick(fn) { subs.push(fn); },
+      snapshot,
+      reset() { hist.clear(); ewmaVar = 0; },
+    };
+  }
+  return Object.freeze({ create });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ sim/book — price–time priority limit order book + matching engine     ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Book = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 以價格–時間優先維護本所訂單簿並執行撮合
+    OWNS       : 委託身分（ownerId）、佇列順序 — 此為系統中唯一持有身分的地方
+    DEPENDS_ON : Core.CFG
+    FAILS      : —（拒絕不合法委託時回傳 null，不拋出）
+    PERFORMANCE: add/cancel O(log L)，L ≈ 24；match 與吃掉的價位數成線性
+    IDEMPOTENT : NO
+    SECURITY   : INTERNAL — 絕不可直接交給引擎，一律經 Barrier.publish()
+    SIZE_LIMIT : 180 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, CFG } = Core, EPS = 1e-9;
+
+  class LOB {
+    constructor() { this.reset(); }
+    reset() {
+      this.lv     = { BUY:new Map(), SELL:new Map() };   // ticks → {px,ticks,qty,orders[]}
+      this.tk     = { BUY:[],        SELL:[]        };   // bids desc, asks asc
+      this.orders = new Map();                           // id → order
+      this.seq    = 1;
+    }
+
+    _ins(side, t) {
+      const a = this.tk[side], desc = side === Side.BUY;
+      let lo = 0, hi = a.length;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (desc ? a[m] > t : a[m] < t) lo = m + 1; else hi = m; }
+      if (a[lo] !== t) a.splice(lo, 0, t);
+    }
+    _del(side, t) {
+      const a = this.tk[side], i = a.indexOf(t);
+      if (i >= 0) a.splice(i, 1);
+      this.lv[side].delete(t);
+    }
+
+    add(side, ticks, qty, owner, now) {
+      if (!(qty > CFG.LOT / 2) || !Number.isFinite(ticks)) return null;
+      let L = this.lv[side].get(ticks);
+      if (!L) { L = { px: ticks * CFG.TICK, ticks, qty: 0, orders: [] }; this.lv[side].set(ticks, L); this._ins(side, ticks); }
+      const o = { id: this.seq++, side, ticks, qty, owner, t: now };
+      L.orders.push(o); L.qty += qty; this.orders.set(o.id, o);
+      return o;
+    }
+
+    cancel(id) {
+      const o = this.orders.get(id); if (!o) return 0;
+      const L = this.lv[o.side].get(o.ticks); if (!L) { this.orders.delete(id); return 0; }
+      const i = L.orders.indexOf(o);
+      if (i >= 0) L.orders.splice(i, 1);
+      L.qty -= o.qty; this.orders.delete(id);
+      if (L.qty <= EPS || !L.orders.length) this._del(o.side, o.ticks);
+      return o.qty;
+    }
+
+    best(side)          { const t = this.tk[side]; return t.length ? this.lv[side].get(t[0]) : null; }
+    qtyAt(side, ticks)  { const L = this.lv[side].get(ticks); return L ? L.qty : 0; }
+
+    /** Volume resting ahead of `id` at its own price — an aggregate figure the
+     *  order's owner could equally derive from public depth updates.          */
+    queueAhead(id) {
+      const o = this.orders.get(id); if (!o) return 0;
+      const L = this.lv[o.side].get(o.ticks); if (!L) return 0;
+      let q = 0;
+      for (const x of L.orders) { if (x === o) break; q += x.qty; }
+      return q;
+    }
+
+    /** Top-n aggregated levels. Returns size only — never order identity. */
+    depth(side, n) {
+      const out = [], t = this.tk[side];
+      for (let i = 0; i < n && i < t.length; i++) {
+        const L = this.lv[side].get(t[i]);
+        out.push({ px: L.px, ticks: L.ticks, qty: L.qty, orders: L.orders.length });
+      }
+      return out;
+    }
+
+    /** Aggress `qty` against the opposite side up to `limitTicks`. */
+    match(aggSide, qty, limitTicks, now, out) {
+      const opp = aggSide === Side.BUY ? Side.SELL : Side.BUY;
+      const tk  = this.tk[opp];
+      let rem = qty;
+      while (rem > EPS && tk.length) {
+        const t = tk[0];
+        if (aggSide === Side.BUY ? t > limitTicks : t < limitTicks) break;
+        const L = this.lv[opp].get(t);
+        while (rem > EPS && L.orders.length) {
+          const o = L.orders[0], f = Math.min(o.qty, rem);
+          o.qty -= f; L.qty -= f; rem -= f;
+          out.push({ px: L.px, qty: f, makerOwner: o.owner, makerId: o.id, aggSide, t: now });
+          if (o.qty <= EPS) { L.orders.shift(); this.orders.delete(o.id); }
+        }
+        if (L.qty <= EPS || !L.orders.length) this._del(opp, t);
+      }
+      return qty - rem;
+    }
+
+    /** LPs pulling quotes that have drifted outside their intended band.
+     *  The band is SIGNED: an ask stranded below the anchor's own half-spread is
+     *  just as stale as one the market ran through, and a real LP cancels both.
+     *  Using |ticks − anchor| instead leaves wrong-side quotes resting forever,
+     *  which silently skews the whole book. Returns cancelled order ids.       */
+    pruneBand(side, lo, hi, frac, rnd) {
+      const a = this.tk[side], gone = [];
+      for (let i = a.length - 1; i >= 0; i--) {
+        const t = a[i];
+        if (t >= lo && t <= hi) continue;
+        const L = this.lv[side].get(t);
+        if (!L) continue;
+        for (let k = L.orders.length - 1; k >= 0; k--) {
+          const o = L.orders[k];
+          if (o.owner === Core.Actor.MM || !rnd.bool(frac)) continue;
+          gone.push(o.id); this.cancel(o.id);
+        }
+      }
+      return gone;
+    }
+
+  }
+  return Object.freeze({ LOB });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ sim/barrier — THE INFORMATION BARRIER.  Sole crossing point between   ║
+   ║ the exchange's private state and any trading engine.                  ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Barrier = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 將完整訂單簿壓成引擎唯一可見的公開視圖，使 front-running
+                 在結構上不可能發生
+    OWNS       : 隔離牆的唯一穿越點、資料存取帳本
+    DEPENDS_ON : Book.LOB（只呼叫 depth() / queueAhead() / 自身委託）
+    DATA_READS : 聚合深度、公開成交帶、自身委託與成交、外部行情
+    DATA_WRITES: —（純函數 + 稽核計數）
+    FAILS      : FrontRunViolationError
+    IDEMPOTENT : YES
+    SECURITY   : INTERNAL — 唯一被授權觸碰 ownerId 的模組
+    SIZE_LIMIT : 130 行
+    ADR_REFS   : ADR-001 資訊隔離牆
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { CFG, FrontRunViolationError } = Core;
+
+  /* Channels the engine MAY read. Counters are incremented by the audit proxy. */
+  const ALLOWED = [
+    ['book',     'Aggregated depth (5×5, size only)'],
+    ['tape',     'Public trade tape + aggressor side'],
+    ['fair',     'External reference / composite fair price'],
+    ['funding',  'Perp funding rate · mark · index'],
+    ['self',     'Own orders, fills, inventory, queue position'],
+    ['signals',  'Derived public-data features (OFI · VPIN · imbalance)'],
+  ];
+  /* Channels that exist in the exchange but are structurally unreachable.
+     These are the front-running vectors. Their counters must stay at zero. */
+  const DENIED = [
+    ['inbound_queue',    'Gateway-received, not-yet-matched orders'],
+    ['client_identity',  'Per-order ownerId at any price level'],
+    ['client_resting',   'Individual client unfilled order detail'],
+    ['hidden_qty',       'Iceberg / reserve quantity'],
+    ['cancel_intent',    'Client cancel-in-flight'],
+  ];
+
+  const reads   = Object.fromEntries(ALLOWED.map(([k]) => [k, 0]));
+  const blocked = Object.fromEntries(DENIED.map(([k]) => [k, 0]));
+  let violations = 0;
+
+  /**
+   * The ONLY function that turns exchange state into engine input.
+   * It receives the LOB itself but calls exactly three of its methods —
+   * depth(), queueAhead() and the caller's own order list. `sim.evq`
+   * (the gateway's pending-order queue) is never a parameter, so no code
+   * path here can reach it.
+   */
+  /** Aggregated, de-identified book — the only shape of depth that leaves here. */
+  function marketBook(lob) {
+    const bids = lob.depth(Core.Side.BUY,  CFG.LEVELS);
+    const asks = lob.depth(Core.Side.SELL, CFG.LEVELS);
+    const bb = bids[0], ba = asks[0];
+    return Object.freeze({
+      bids: Object.freeze(bids.map(Object.freeze)), asks: Object.freeze(asks.map(Object.freeze)),
+      bestBid: bb ? bb.px : 0, bestAsk: ba ? ba.px : 0,
+      bidQty: bb ? bb.qty : 0, askQty: ba ? ba.qty : 0,
+      mid:   bb && ba ? (bb.px + ba.px) / 2 : 0,
+      spread: bb && ba ? ba.px - bb.px : 0,
+      micro: bb && ba ? (bb.px * ba.qty + ba.px * bb.qty) / (bb.qty + ba.qty) : 0,
+    });
+  }
+
+  function publish({ t, lob, book, tape, fair, funding, self, signals, audit }) {
+
+    // Shadow engines pre-resolve their own virtual orders; live engines resolve
+    // theirs from the book. Either way this only ever touches OUR OWN orders.
+    const resolved = self.ownOrders ? self.ownOrders
+      : (self.orderIds || []).map(id => {
+          const o = lob.orders.get(id);
+          if (!o) return null;
+          return Object.freeze({ id, side:o.side, px:o.ticks * CFG.TICK, ticks:o.ticks, qty:o.qty,
+                                 queueAhead: lob.queueAhead(id), ageMs: t - o.t, state:'LIVE' });
+        }).filter(Boolean);
+    const myOrders = self.pending && self.pending.length ? resolved.concat(self.pending) : resolved;
+
+    const mb = book || marketBook(lob);
+    const view = {
+      t,
+      book: mb.mid ? mb : Object.freeze({ ...mb, mid: fair.micro || 0, micro: fair.micro || 0 }),
+      tape:    tape,                          // public data; entries are already frozen
+      fair:    Object.freeze({ ...fair }),    // DELAYED by our market-data latency
+      // Copy-then-freeze: `funding` and `signals` are live objects owned by the
+      // feed and the signal extractor. Freezing them in place would brick both.
+      funding: Object.freeze({ ...funding }),
+      self:    Object.freeze({ ...self, orders: Object.freeze(myOrders) }),
+      signals: Object.freeze({ ...signals }),
+    };
+    Object.freeze(view);
+    return audit ? wrap(view) : view;
+  }
+
+  /** Audit tap — records which channels the live engine actually consults. */
+  function wrap(view) {
+    return new Proxy(view, {
+      get(o, k) { if (k in reads) reads[k]++; return o[k]; },
+      set() { throw new FrontRunViolationError('public view is read-only'); },
+    });
+  }
+
+  /** Wired to the red "ATTEMPT PEEK" button — proves the wall is load-bearing. */
+  function attemptPeek(channel) {
+    if (channel in blocked) blocked[channel]++;
+    violations++;
+    throw new FrontRunViolationError(
+      `Access to "${channel}" denied. Trading on client pre-trade intent is front-running ` +
+      `(FINRA 5270). This channel is not a parameter of Barrier.publish() and has no code path to any engine.`);
+  }
+
+  const ledger = () => ({
+    allowed: ALLOWED.map(([k, d]) => ({ key:k, desc:d, n:reads[k] })),
+    denied:  DENIED.map(([k, d])  => ({ key:k, desc:d, n:blocked[k] })),
+    violations,
+  });
+  function reset() { for (const k in reads) reads[k] = 0; for (const k in blocked) blocked[k] = 0; violations = 0; }
+
+  return Object.freeze({ publish, marketBook, attemptPeek, ledger, reset, DENIED });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ sim/signals — public-data feature extraction (OFI · VPIN · Hawkes)    ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Signals = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 只從公開資料萃取微結構訊號 — 這是合法「微結構優勢」的來源
+    OWNS       : VPIN 成交量分桶狀態、OFI 累積、Hawkes 強度
+    DEPENDS_ON : 公開深度快照與公開成交帶（絕不接觸委託身分）
+    EMITS      : SignalTick v1
+    FAILS      : —
+    PERFORMANCE: 每次更新 O(新成交筆數)，無配置
+    SECURITY   : PUBLIC
+    SIZE_LIMIT : 120 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { CFG } = Core;
+
+  function create() {
+    const dP  = new U.Ring(64);                 // per-bucket price change, for σ_ΔP
+    const imb = new U.Ring(CFG.VPIN_WINDOW);    // |2·buyFrac − 1| per bucket
+    let bVol = 0, bStart = 0, prevBid = 0, prevAsk = 0, prevBidQ = 0, prevAskQ = 0;
+    let ofiAcc = 0, hawkes = 0, lastPx = 0;
+
+    const S = { ofi:0, imbalance:0, microDrift:0, vpin:0, hawkes:0, staleness:0,
+                toxic:0, tradeRate:0, bucketPct:0 };
+
+    /** Bulk Volume Classification (Gaussian variant): split each equal-volume
+     *  bucket into buy/sell by the standardised price change over the bucket. */
+    function closeBucket(px) {
+      const d = px - bStart;
+      dP.push(d);
+      const sd = Math.max(dP.std(), 1e-6);
+      const buyFrac = U.normCdf(d / sd);
+      imb.push(Math.abs(2 * buyFrac - 1));
+      bStart = px; bVol = 0;
+      S.vpin = imb.mean();
+    }
+
+    function onTrades(trades) {
+      for (const tr of trades) {
+        if (!bStart) bStart = tr.px;
+        bVol += tr.qty; lastPx = tr.px; hawkes += 1;
+        if (bVol >= CFG.VPIN_BUCKET) closeBucket(tr.px);
+      }
+      S.bucketPct = bVol / CFG.VPIN_BUCKET;
+    }
+
+    /** Cont–Kukanov–Stoikov order-flow imbalance from level-1 changes. */
+    function onBook(b) {
+      if (prevBid) {
+        let e = 0;
+        if (b.bestBid >= prevBid) e += b.bidQty;
+        if (b.bestBid <= prevBid) e -= prevBidQ;
+        if (b.bestAsk <= prevAsk) e -= b.askQty;
+        if (b.bestAsk >= prevAsk) e += prevAskQ;
+        ofiAcc = ofiAcc * 0.93 + e;
+      }
+      prevBid = b.bestBid; prevAsk = b.bestAsk; prevBidQ = b.bidQty; prevAskQ = b.askQty;
+    }
+
+    return {
+      S,
+      update(book, trades, fairMicro, dt) {
+        onBook(book); onTrades(trades);
+        const s = dt / 1000;
+        hawkes *= Math.exp(-s / 1.5);                       // exponential kernel, β = 1/1.5s
+        S.hawkes    = hawkes;
+        S.tradeRate = hawkes / 1.5;
+        const qb = book.bids.reduce((a, l) => a + l.qty, 0), qa = book.asks.reduce((a, l) => a + l.qty, 0);
+        S.imbalance  = (qb - qa) / Math.max(qb + qa, 1e-9);
+        S.ofi        = U.clamp(ofiAcc / Math.max(qb + qa, 1e-6), -4, 4);
+        S.microDrift = book.mid ? (book.micro - book.mid) / CFG.TICK : 0;
+        S.staleness  = book.mid ? (fairMicro - book.mid) / CFG.TICK : 0;
+        S.toxic      = U.clamp(S.vpin * 1.6 + Math.abs(S.ofi) * 0.12, 0, 1);
+        return S;
+      },
+      reset() { dP.clear(); imb.clear(); bVol = 0; bStart = 0; prevBid = 0; prevAsk = 0;
+                ofiAcc = 0; hawkes = 0; for (const k in S) S[k] = 0; },
+    };
+  }
+  return Object.freeze({ create });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ sim/exchange — participants, latency race, event-driven matching      ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Sim = ((Core, U, Book, Signals) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 以真實 fair price 為錨，模擬本所的訂單流、參與者與延遲競速
+    OWNS       : 事件佇列（閘道待撮合佇列 — 引擎絕不可見）、參與者行為模型
+    DEPENDS_ON : Book.LOB, Signals, Feed 的 FairTick
+    EMITS      : Trade v1, OwnFill v1, FastSignal v1
+    LISTENS_TO : FairTick v1
+    FAILS      : —
+    PERFORMANCE: 每模擬秒約 350 事件；step() P99 < 0.6ms
+    IDEMPOTENT : NO
+    SECURITY   : INTERNAL
+    SIZE_LIMIT : 300 行
+    ADR_REFS   : ADR-001（evq 永不外流）
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, Actor, Intent, CFG } = Core;
+
+  const P = {
+    LP_RATE: 240, LP_LAG_MS: 280, LP_Q0: 0.55, LP_DECAY: 0.22, PRUNE: 6,
+    RETAIL_RATE: 2.6, RETAIL_MU: Math.log(0.018), RETAIL_SIG: 1.05,
+    JUMP_RATE: 0.24, JUMP_LO: 4, JUMP_HI: 26,
+    ARB_EDGE_BPS: 0.75, ARB_ATTENTION: 0.55, ARB_LAT_MS: 1.6, ARB_COOL_MS: 45,
+  };
+
+  function create(log) {
+    const lob = new Book.LOB(), evq = new U.Heap(), rnd = U.rng(0xBEEFCAFE);
+    const sig = Signals.create();
+    const tape = [], newTrades = [];
+    const mmIds = new Set();
+    const lat = { mmMd: 0.35, mmOrd: 0.45, arb: P.ARB_LAT_MS };
+    const acc = { lp: 0, retail: 0 };
+    const fT = new Float64Array(128), fP = new Float64Array(128);
+    let fI = 0, fN = 0;
+    let t = 0, simFair = 0, lpAnchor = 0, sigma = 6, seeded = false;
+    let onOwnFill = null, onFast = null, onAgg = null;
+    const arbFlight = { BUY:false, SELL:false }, arbCool = { BUY:0, SELL:0 };
+    const st = { toxicVol:0, savedVol:0, benignVol:0, arbEvents:0, trades:0,
+                 cancelOk:0, cancelMiss:0, rejected:0, mmMakerVol:0 };
+
+    /* ── fair-price process: anchored to the real feed, high-resolution ── */
+    function pushFair(tt, px) { fT[fI] = tt; fP[fI] = px; fI = (fI + 1) % 128; if (fN < 128) fN++; }
+    /** Value of fair as it was at simulated time `tt` — a step function, so an
+     *  actor with market-data latency L genuinely cannot see a jump until t+L. */
+    function fairAt(tt) {
+      for (let k = 1; k <= fN; k++) { const i = (fI - k + 256) % 128; if (fT[i] <= tt) return fP[i]; }
+      return fN ? fP[(fI - fN + 256) % 128] : simFair;
+    }
+    const halfTicks = () => U.clamp(Math.round(4 + sigma * 1.1), 3, 400);   // ambient ≈ 2.8 bps @ σ$6
+
+    function advanceFair(dt, feed) {
+      if (!seeded) { simFair = feed.micro > 0 ? feed.micro : 79500; lpAnchor = simFair; seeded = true; seedBook(); }
+      sigma = U.clamp(feed.sigma || 6, 0.5, 400);
+      const s = dt / 1000;
+      let px = simFair;
+      if (feed.micro > 0) px += (feed.micro - simFair) * Math.min(1, s / 0.30);   // track reality
+      px += sigma * Math.sqrt(s) * rnd.normal() * 0.5;
+      if (rnd.bool(P.JUMP_RATE * s)) px += (rnd.bool(0.5) ? -1 : 1) * CFG.TICK * rnd.range(P.JUMP_LO, P.JUMP_HI);
+      simFair = px;
+      lpAnchor += (simFair - lpAnchor) * Math.min(1, s / (P.LP_LAG_MS / 1000));   // LPs trail — the stale-quote source
+    }
+
+    /* ── noise liquidity providers ──────────────────────────────────────── */
+    function crosses(side, ticks) {
+      const b = lob.best(side === Side.BUY ? Side.SELL : Side.BUY);
+      return !!b && (side === Side.BUY ? ticks >= b.ticks : ticks <= b.ticks);
+    }
+    function cancelOneLP(side, tk) {
+      const L = lob.lv[side].get(tk); if (!L) return;
+      const cands = L.orders.filter(o => o.owner !== Actor.MM);
+      if (cands.length) lob.cancel(cands[rnd.int(cands.length)].id);
+    }
+    function seedBook() {
+      const A = Math.round(simFair / CFG.TICK), h = halfTicks();
+      for (let i = 0; i < CFG.BOOK_DEPTH; i++) {
+        const q = P.LP_Q0 * Math.exp(-i * P.LP_DECAY);
+        lob.add(Side.BUY,  A - h - i, q * rnd.range(.6, 1.4), Actor.NOISE_LP, 0);
+        lob.add(Side.SELL, A + h + i, q * rnd.range(.6, 1.4), Actor.NOISE_LP, 0);
+      }
+    }
+    function maintainLP(dt) {
+      const A = Math.round(lpAnchor / CFG.TICK), h = halfTicks();
+      acc.lp += P.LP_RATE * dt / 1000;
+      for (let n = Math.floor(acc.lp); n > 0; n--) {
+        acc.lp -= 1;
+        const side = rnd.bool(0.5) ? Side.BUY : Side.SELL;
+        const li = Math.min(CFG.BOOK_DEPTH - 1, (Math.pow(rnd.next(), 1.7) * CFG.BOOK_DEPTH) | 0);
+        const tk = side === Side.BUY ? A - h - li : A + h + li;
+        const target = P.LP_Q0 * Math.exp(-li * P.LP_DECAY) * rnd.range(0.55, 1.6);
+        const cur = lob.qtyAt(side, tk);
+        if (cur < target) { if (!crosses(side, tk)) lob.add(side, tk, Math.min(target - cur, P.LP_Q0) * rnd.range(.4, 1), Actor.NOISE_LP, t); }
+        else if (cur > target * 1.7) cancelOneLP(side, tk);
+      }
+      const f = U.clamp(P.PRUNE * dt / 1000, 0, 1), D = CFG.BOOK_DEPTH + 2;
+      lob.pruneBand(Side.BUY,  A - h - D, A - h,     f, rnd);
+      lob.pruneBand(Side.SELL, A + h,     A + h + D, f, rnd);
+    }
+
+    /* ── uninformed (retail) taker flow ─────────────────────────────────── */
+    function genRetail(dt, t0) {
+      acc.retail += P.RETAIL_RATE * dt / 1000;
+      for (let n = Math.floor(acc.retail); n > 0; n--) {
+        acc.retail -= 1;
+        const bias = U.clamp(sig.S.microDrift * 0.05, -0.16, 0.16);
+        const side = rnd.bool(0.5 + bias) ? Side.BUY : Side.SELL;
+        const qty  = Math.max(CFG.LOT, rnd.lognormal(P.RETAIL_MU, P.RETAIL_SIG));
+        const lim  = Math.round((side === Side.BUY ? simFair + 80 : simFair - 80) / CFG.TICK);
+        evq.push({ t: t0 + rnd.next() * dt, kind:'RETAIL', side, qty, limTicks: lim });
+      }
+    }
+
+    /* ── latency arbitrageurs: the source of genuine adverse selection ──── */
+    /** Our orders sitting inside the sweep the arbitrageur has just committed to.
+     *  Identified by id, not just quantity: a quote we send AFTER the arb decided
+     *  was never part of that race, and counting its fill against us would make
+     *  the win rate depend on our own quote cadence rather than on our speed.  */
+    function mmExposure(side, limTicks, aggSide) {
+      const ids = new Set(); let q = 0;
+      for (const o of lob.orders.values()) {
+        if (o.owner !== Actor.MM || o.side !== side) continue;
+        if (aggSide === Side.BUY ? o.ticks <= limTicks : o.ticks >= limTicks) { ids.add(o.id); q += o.qty; }
+      }
+      return { ids, qty: q };
+    }
+    function detectArb(now) {
+      const fee = P.ARB_EDGE_BPS / 1e4 * simFair;
+      for (const side of [Side.BUY, Side.SELL]) {
+        if (arbFlight[side] || now < arbCool[side]) continue;
+        const opp = side === Side.BUY ? Side.SELL : Side.BUY;
+        const lim = side === Side.BUY ? simFair - fee : simFair + fee;
+        let qty = 0, limTicks = null;
+        for (const L of lob.depth(opp, CFG.BOOK_DEPTH)) {
+          if (side === Side.BUY ? L.px > lim : L.px < lim) break;
+          qty += L.qty; limTicks = L.ticks;
+        }
+        if (qty <= CFG.LOT || limTicks === null || !rnd.bool(P.ARB_ATTENTION)) continue;
+        arbFlight[side] = true; st.arbEvents++;
+        arbCool[side] = now + P.ARB_COOL_MS * rnd.range(0.6, 1.9);
+        const exp = mmExposure(opp, limTicks, side);
+        evq.push({ t: now + lat.arb * rnd.range(.85, 1.25), kind:'ARB', side, qty, limTicks,
+                   mmExposed: exp.qty, mmIdsAtRisk: exp.ids });
+      }
+    }
+
+    /* ── trade recording ────────────────────────────────────────────────── */
+    function record(fills, aggSide, toxic, weTake) {
+      for (const f of fills) {
+        st.trades++;
+        const mineMaker = f.makerOwner === Actor.MM;
+        if (mineMaker) {
+          st.mmMakerVol += f.qty;
+          onOwnFill && onOwnFill({ t:f.t, px:f.px, qty:f.qty,
+            side: aggSide === Side.BUY ? Side.SELL : Side.BUY, role:'MAKER', toxic });
+        } else if (toxic) st.toxicVol += 0; else st.benignVol += f.qty;
+        if (weTake) onOwnFill && onOwnFill({ t:f.t, px:f.px, qty:f.qty, side:aggSide, role:'TAKER', toxic:false });
+        const e = Object.freeze({ t:f.t, px:f.px, qty:f.qty, side:aggSide, toxic, mine: mineMaker || weTake });
+        tape.push(e); newTrades.push(e);
+      }
+      if (tape.length > CFG.TAPE_MAX) tape.splice(0, tape.length - CFG.TAPE_MAX);
+      for (const id of mmIds) if (!lob.orders.has(id)) mmIds.delete(id);
+    }
+
+    /* ── event application ──────────────────────────────────────────────── */
+    const fills = [];
+    function apply(e) {
+      switch (e.kind) {
+        case 'MM_FAST': {
+          if (onFast) onFast(e.t);
+          break;
+        }
+        case 'ARB': {
+          arbFlight[e.side] = false;
+          if (onAgg) onAgg(e.side, e.qty, e.limTicks, e.t, true);
+          fills.length = 0;
+          lob.match(e.side, e.qty, e.limTicks, e.t, fills);
+          let raced = 0;
+          for (const f of fills) if (f.makerOwner === Actor.MM && e.mmIdsAtRisk.has(f.makerId)) raced += f.qty;
+          st.toxicVol += raced;                                   // lost the race
+          st.savedVol += Math.max(0, e.mmExposed - raced);        // pulled in time
+          record(fills, e.side, true, false);
+          break;
+        }
+        case 'RETAIL': {
+          if (onAgg) onAgg(e.side, e.qty, e.limTicks, e.t, false);
+          fills.length = 0;
+          lob.match(e.side, e.qty, e.limTicks, e.t, fills);
+          record(fills, e.side, false, false);
+          break;
+        }
+        case 'MM_ORDER': {
+          if (crosses(e.side, e.ticks)) { st.rejected++; break; }
+          const o = lob.add(e.side, e.ticks, e.qty, Actor.MM, e.t);
+          if (o) mmIds.add(o.id);
+          break;
+        }
+        case 'MM_CANCEL': {
+          const q = lob.cancel(e.id); mmIds.delete(e.id);
+          if (q > 0) st.cancelOk++; else st.cancelMiss++;      // miss ⇒ already filled: race lost
+          break;
+        }
+        case 'MM_TAKE': {                                       // self-match prevention first
+          const opp = e.side === Side.BUY ? Side.SELL : Side.BUY;
+          for (const o of [...lob.orders.values()])
+            if (o.owner === Actor.MM && o.side === opp &&
+                (e.side === Side.BUY ? o.ticks <= e.limTicks : o.ticks >= e.limTicks)) { lob.cancel(o.id); mmIds.delete(o.id); }
+          fills.length = 0;
+          lob.match(e.side, e.qty, e.limTicks, e.t, fills);
+          record(fills, e.side, false, true);
+          break;
+        }
+      }
+    }
+    function drain(tEnd) { while (evq.size && evq.peek().t <= tEnd) apply(evq.pop()); }
+
+    function route(intents, now) {
+      const L = lat.mmOrd * rnd.range(0.85, 1.25);
+      for (const it of intents) {
+        if (it.type === Intent.PLACE)       evq.push({ t: now + L, kind:'MM_ORDER', side:it.side, ticks:it.ticks, qty:it.qty });
+        else if (it.type === Intent.CANCEL) evq.push({ t: now + L, kind:'MM_CANCEL', id:it.id });
+        else if (it.type === Intent.TAKE)   evq.push({ t: now + L, kind:'MM_TAKE', side:it.side, qty:it.qty, limTicks:it.limTicks });
+      }
+    }
+
+    /* ── public step ────────────────────────────────────────────────────── */
+    function step(dt, feed) {
+      const t0 = t, prev = simFair;
+      advanceFair(dt, feed);
+      pushFair(t0, simFair);
+      // One reference-feed update per step, delivered after OUR market-data
+      // latency. Thresholding this instead would leave quotes stale between
+      // alerts for longer than the arbitrageur's cooldown — the engine would
+      // lose races it was fast enough to win.
+      evq.push({ t: t0 + lat.mmMd * rnd.range(.9, 1.15), kind:'MM_FAST' });
+      maintainLP(dt); genRetail(dt, t0); detectArb(t0);
+      drain(t0 + dt);
+      t = t0 + dt;
+    }
+
+    return {
+      lob, tape, sig, P,
+      get t()        { return t; },
+      get fair()     { return simFair; },
+      get sigma()    { return sigma; },
+      get stats()    { return st; },
+      get mmIds()    { return mmIds; },
+      get latency()  { return lat; },
+      fairAt, step, route,
+      setLatency(md, ord) { lat.mmMd = md; lat.mmOrd = ord; },
+      setArbLatency(v)    { lat.arb = v; },
+      onOwnFill(cb) { onOwnFill = cb; },
+      onFastSignal(cb) { onFast = cb; },
+      onAggression(cb) { onAgg = cb; },
+      takeNewTrades() { const a = newTrades.slice(); newTrades.length = 0; return a; },
+      reset() {
+        lob.reset(); evq.clear(); sig.reset(); rnd.reseed(0xBEEFCAFE);
+        tape.length = 0; newTrades.length = 0; mmIds.clear();
+        t = 0; seeded = false; fI = 0; fN = 0;
+        acc.lp = acc.retail = 0; arbFlight.BUY = arbFlight.SELL = false; arbCool.BUY = arbCool.SELL = 0;
+        for (const k in st) st[k] = 0;
+      },
+    };
+  }
+  return Object.freeze({ create, P });
+})(Core, U, Book, Signals);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ metrics/ — P&L decomposition, markout curve, risk & quality metrics   ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Metrics = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 把成交流轉成可歸因的績效 — 價差捕捉 vs 逆選擇 vs 庫存 vs carry
+    OWNS       : markout 待決佇列、權益/庫存時序、drawdown 峰值
+    DEPENDS_ON : Core.CFG, U.Ring
+    DATA_READS : 自身成交、自身避險、fair price 軌跡
+    FAILS      : —
+    IDEMPOTENT : NO
+    SIZE_LIMIT : 210 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, CFG } = Core, T = CFG.MARKOUT_TAUS;
+
+  /** Shared 90 s fair-price trail — markout at τ = 30 s needs history the
+   *  simulator's 1.3 s micro-ring cannot hold. */
+  const Trail = (() => {
+    const N = 900, tt = new Float64Array(N), pp = new Float64Array(N);
+    let i = 0, n = 0, last = -1e9;
+    return {
+      push(t, px) { if (t - last < 100) return; tt[i] = t; pp[i] = px; i = (i + 1) % N; if (n < N) n++; last = t; },
+      at(t) { for (let k = 1; k <= n; k++) { const j = (i - k + N * 2) % N; if (tt[j] <= t) return pp[j]; }
+              return n ? pp[(i - n + N * 2) % N] : 0; },
+      reset() { i = 0; n = 0; last = -1e9; },
+    };
+  })();
+
+  function create() {
+    const s = {
+      inv:0, cash:0, hedgeInv:0, hedgeCash:0, funding:0, hedgeCost:0, hedgeVol:0,
+      spread:0, feesPnl:0, unhedgedMs:0,
+      fills:0, takerFills:0, volume:0, notional:0, toxicFills:0, toxicVol:0,
+      ordersSent:0, cancels:0, invPeak:0, invAbsSum:0, invN:0,
+      quoteMs:0, twoSideMs:0, liveMs:0, totalMs:0, qsSum:0, qsN:0, qaSum:0, qaN:0,
+      peak:0, maxDD:0, lastTotal:0, secAcc:0,
+      mkSum:new Float64Array(T.length), mkN:new Float64Array(T.length),
+      effSum:0, effVol:0, pending:[],
+      ret:new U.Ring(900), pnlS:new U.Ring(CFG.SERIES_LEN), invS:new U.Ring(CFG.SERIES_LEN),
+      sampAcc:0, sampN:0,
+    };
+
+    const mtm      = (fair) => s.cash + s.inv * fair;
+    const hedgeMtm = (fair) => s.hedgeCash + s.hedgeInv * fair;
+    const total    = (fair) => mtm(fair) + hedgeMtm(fair) + s.funding;
+
+    function onFill(f, fair) {
+      const notion = f.px * f.qty, sign = f.side === Side.BUY ? 1 : -1;
+      const feeBps = f.role === 'TAKER' ? CFG.MM_TAKER_BPS : CFG.MAKER_FEE_BPS;
+      const fee = notion * feeBps / 1e4;
+      s.inv += sign * f.qty; s.cash -= sign * notion + fee; s.feesPnl -= fee;
+      s.spread += sign * (fair - f.px) * f.qty;
+      s.fills++; if (f.role === 'TAKER') s.takerFills++;
+      s.volume += f.qty; s.notional += notion;
+      if (f.toxic) { s.toxicFills++; s.toxicVol += f.qty; }
+      s.effSum += sign * (fair - f.px) / fair * 1e4 * f.qty; s.effVol += f.qty;
+      s.pending.push({ t:f.t, px:f.px, sign, qty:f.qty, k:0 });
+      if (Math.abs(s.inv) > Math.abs(s.invPeak)) s.invPeak = s.inv;
+    }
+
+    /** Hedge on an external venue: pay the touch plus taker fee plus impact. */
+    function hedge(side, qty, fair, sigma) {
+      if (!(qty > 0)) return;
+      const slipBps = 0.4 + Math.min(3, qty * 6);                  // size-dependent impact
+      const px = fair * (1 + (side === Side.BUY ? 1 : -1) * slipBps / 1e4);
+      const notion = px * qty, fee = notion * CFG.EXT_TAKER_BPS / 1e4;
+      if (side === Side.BUY) { s.hedgeCash -= notion; s.hedgeInv += qty; }
+      else                   { s.hedgeCash += notion; s.hedgeInv -= qty; }
+      s.hedgeCash -= fee;
+      s.hedgeCost += fee + Math.abs(px - fair) * qty; s.hedgeVol += qty;
+    }
+
+    function accrueFunding(rate, markPx, dtMs, mult) {
+      if (!s.hedgeInv || !rate) return;
+      s.funding += (-s.hedgeInv) * markPx * rate * (dtMs * (mult || 1) / (CFG.FUNDING_HOURS * 3600e3));
+    }
+
+    /** Resolve markouts whose horizon has elapsed. τ=0.1 s ≈ effective half-spread,
+     *  τ=30 s ≈ what survives adverse selection. The gap IS the toxicity cost.  */
+    function resolveMarkouts(now) {
+      for (let i = s.pending.length - 1; i >= 0; i--) {
+        const p = s.pending[i];
+        while (p.k < T.length && now - p.t >= T[p.k] * 1000) {
+          const f2 = Trail.at(p.t + T[p.k] * 1000);
+          if (f2 > 0) { s.mkSum[p.k] += p.sign * (f2 - p.px) / p.px * 1e4 * p.qty; s.mkN[p.k] += p.qty; }
+          p.k++;
+        }
+        if (p.k >= T.length) s.pending.splice(i, 1);
+      }
+      if (s.pending.length > 5000) s.pending.splice(0, s.pending.length - 5000);
+    }
+
+    /** Called once per simulated step. `q` describes our current quoting state. */
+    function mark(now, dtMs, fair, q, isLive) {
+      const tot = total(fair);
+      s.totalMs += dtMs; if (isLive) s.liveMs += dtMs;
+      if (q.bid || q.ask) s.quoteMs += dtMs;
+      if (q.bid && q.ask) { s.twoSideMs += dtMs; s.qsSum += (q.ask - q.bid) / fair * 1e4 * dtMs; s.qsN += dtMs; }
+      if (q.queueAhead != null) { s.qaSum += q.queueAhead; s.qaN++; }
+      if (Math.abs(s.inv + s.hedgeInv) > 1e-6) s.unhedgedMs += dtMs;
+      s.invAbsSum += Math.abs(s.inv) * dtMs; s.invN += dtMs;
+      if (tot > s.peak) s.peak = tot;
+      s.maxDD = Math.max(s.maxDD, s.peak - tot);
+      s.secAcc += dtMs;
+      if (s.secAcc >= 1000) { s.ret.push(tot - s.lastTotal); s.lastTotal = tot; s.secAcc = 0; }
+      s.sampAcc += dtMs;
+      if (s.sampAcc >= 200) { s.pnlS.push(tot); s.invS.push(s.inv); s.sampAcc = 0; s.sampN++; }
+      resolveMarkouts(now);
+    }
+
+    function snapshot(fair, sigma) {
+      const m = mtm(fair), h = hedgeMtm(fair), tot = m + h + s.funding;
+      const mk = T.map((_, i) => s.mkN[i] > 0 ? s.mkSum[i] / s.mkN[i] : null);
+      const eff = s.effVol > 0 ? s.effSum / s.effVol : 0;
+      const far = mk[4] != null ? mk[4] : mk[3];                      // τ = 15 s, else 5 s
+      const mu = s.ret.mean(), sd = s.ret.std();
+      const secs = Math.max(s.totalMs / 1000, 1);
+      return {
+        pnl: { spread:s.spread, fees:s.feesPnl, inventory:m - s.spread - s.feesPnl,
+               hedge:h, funding:s.funding, total:tot },
+        inv:s.inv, hedgeInv:s.hedgeInv, netDelta:s.inv + s.hedgeInv,
+        invPeak:s.invPeak, invTwa:s.invN ? s.invAbsSum / s.invN : 0,
+        invVaR: 1.65 * sigma * Math.sqrt(60) * Math.abs(s.inv + s.hedgeInv),
+        fills:s.fills, takerFills:s.takerFills, volume:s.volume, notional:s.notional,
+        fillsPerMin: s.fills / (secs / 60),
+        toxicFills:s.toxicFills, toxicVol:s.toxicVol,
+        toxicPct: s.volume > 0 ? s.toxicVol / s.volume : 0,
+        effSpreadBps: eff, markout: mk, realizedBps: far, adverseBps: far == null ? null : eff - far,
+        quoteUptime: s.totalMs ? s.twoSideMs / s.totalMs : 0,
+        quotedSpreadBps: s.qsN ? s.qsSum / s.qsN : 0,
+        avgQueueAhead: s.qaN ? s.qaSum / s.qaN : 0,
+        quoteToTrade: s.fills ? s.ordersSent / s.fills : 0,
+        ordersSent:s.ordersSent, cancels:s.cancels,
+        hedgeCost:s.hedgeCost, hedgeVol:s.hedgeVol,
+        unhedgedPct: s.totalMs ? s.unhedgedMs / s.totalMs : 0,
+        funding:s.funding,
+        fundingApr: Math.abs(s.hedgeInv) > 1e-6 && s.totalMs > 4000
+          ? s.funding / (Math.abs(s.hedgeInv) * fair) * (31.536e9 / s.totalMs) : 0,
+        sharpe: sd > 1e-9 && s.ret.len >= 20 ? U.clamp(mu / sd * Math.sqrt(86400), -999, 999) : 0,
+        maxDD:s.maxDD, liveMs:s.liveMs, totalMs:s.totalMs,
+        pnlS:s.pnlS, invS:s.invS,
+      };
+    }
+
+    return { s, onFill, hedge, accrueFunding, mark, snapshot,
+             countOrder(n) { s.ordersSent += n; }, countCancel(n) { s.cancels += n; },
+             reset() {
+               for (const k of ['inv','cash','hedgeInv','hedgeCash','funding','hedgeCost','hedgeVol',
+                    'spread','feesPnl','unhedgedMs','fills','takerFills','volume','notional','toxicFills',
+                    'toxicVol','ordersSent','cancels','invPeak','invAbsSum','invN','quoteMs','twoSideMs',
+                    'liveMs','totalMs','qsSum','qsN','qaSum','qaN','peak','maxDD','lastTotal','secAcc',
+                    'effSum','effVol','sampAcc','sampN']) s[k] = 0;
+               s.mkSum.fill(0); s.mkN.fill(0); s.pending.length = 0;
+               s.ret.clear(); s.pnlS.clear(); s.invS.clear();
+             } };
+  }
+  return Object.freeze({ create, Trail });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ engines/exec — order routing.  LIVE quotes rest in the real book;     ║
+   ║ SHADOW quotes are filled by a queue-adjusted model on identical flow. ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Exec = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 把引擎意圖變成成交 — 真實掛單或影子佇列估計
+    OWNS       : 在途委託狀態（PENDING / CANCELLING）、影子虛擬委託簿
+    DEPENDS_ON : Sim（route/lob/latency）、Metrics ledger
+    FAILS      : —
+    IDEMPOTENT : NO
+    SIZE_LIMIT : 180 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, Intent, Mode, CFG } = Core, EPS = 1e-9;
+
+  const sideOf = (s) => s === Side.BUY ? Side.SELL : Side.BUY;
+
+  function tally(led, intents) {
+    let p = 0, c = 0;
+    for (const it of intents) { if (it.type === Intent.PLACE) p++; else if (it.type === Intent.CANCEL) c++; }
+    led.countOrder(p); led.countCancel(c);
+  }
+
+  /* ── LIVE ─────────────────────────────────────────────────────────────── */
+  function live(sim, led) {
+    let pending = [], cancelling = new Set();
+    return {
+      mode: Mode.LIVE,
+      self(t) {
+        pending = pending.filter(p => p.arriveAt > t);
+        for (const id of cancelling) if (!sim.mmIds.has(id)) cancelling.delete(id);
+        return {
+          inventory: led.s.inv, hedgeInv: led.s.hedgeInv, netDelta: led.s.inv + led.s.hedgeInv,
+          cash: led.s.cash, fills: led.s.fills, mode: Mode.LIVE,
+          latencyMs: sim.latency.mmMd + sim.latency.mmOrd,
+          orderIds: [...sim.mmIds].filter(id => !cancelling.has(id)),
+          pending: pending.map(p => Object.freeze({ id:null, side:p.side, px:p.ticks * CFG.TICK,
+                    ticks:p.ticks, qty:p.qty, queueAhead:0, ageMs:0, state:'PENDING' })),
+        };
+      },
+      submit(intents, now, fair, sigma) {
+        if (!intents || !intents.length) return;
+        tally(led, intents);
+        const lat = sim.latency.mmOrd;
+        const routed = [];
+        for (const it of intents) {
+          if (it.type === Intent.HEDGE) { led.hedge(it.side, it.qty, fair, sigma); continue; }
+          if (it.type === Intent.PLACE)  pending.push({ side:it.side, ticks:it.ticks, qty:it.qty, arriveAt: now + lat * 1.3 });
+          if (it.type === Intent.CANCEL) cancelling.add(it.id);
+          routed.push(it);
+        }
+        if (routed.length) sim.route(routed, now);
+      },
+      tick() {},
+      reset() { pending = []; cancelling = new Set(); },
+    };
+  }
+
+  /* ── SHADOW ───────────────────────────────────────────────────────────── */
+  function shadow(sim, led) {
+    let orders = new Map(), takes = [], seq = 1;
+    const alive = (o, t) => t >= o.activeAt && t < o.deadAt && o.qty > EPS;
+
+    function onAggression(aggSide, qty, limTicks, t, toxic) {
+      const passive = sideOf(aggSide), lob = sim.lob;
+      const mine = [];
+      for (const o of orders.values()) {
+        if (o.side !== passive || !alive(o, t)) continue;
+        if (o.qAhead < 0) o.qAhead = lob.qtyAt(o.side, o.ticks);
+        mine.push(o);
+      }
+      if (!mine.length) return;
+      const prices = new Set(mine.map(o => o.ticks));
+      for (const L of lob.depth(passive, CFG.BOOK_DEPTH)) prices.add(L.ticks);
+      const arr = [...prices].sort((a, b) => passive === Side.BUY ? b - a : a - b);
+      let rem = qty;
+      for (const tk of arr) {
+        if (rem <= EPS) break;
+        if (passive === Side.BUY ? tk < limTicks : tk > limTicks) break;
+        const realQ = lob.qtyAt(passive, tk);
+        for (const o of mine) {
+          if (o.ticks !== tk || rem <= EPS || o.qty <= EPS) continue;
+          const ahead = Math.min(o.qAhead, realQ);            // our place in the FIFO queue
+          const f = Math.min(Math.max(0, rem - ahead), o.qty);
+          if (f > EPS) {
+            o.qty -= f; rem -= f;
+            led.onFill({ t, px: tk * CFG.TICK, qty: f, side: o.side, role:'MAKER', toxic }, sim.fair);
+            if (o.qty <= EPS) orders.delete(o.id);
+          }
+        }
+        rem -= realQ;
+      }
+    }
+
+    return {
+      mode: Mode.SHADOW, onAggression,
+      self(t) {
+        return {
+          inventory: led.s.inv, hedgeInv: led.s.hedgeInv, netDelta: led.s.inv + led.s.hedgeInv,
+          cash: led.s.cash, fills: led.s.fills, mode: Mode.SHADOW,
+          latencyMs: sim.latency.mmMd + sim.latency.mmOrd,
+          ownOrders: [...orders.values()].filter(o => alive(o, t)).map(o => Object.freeze({
+            id:o.id, side:o.side, px:o.ticks * CFG.TICK, ticks:o.ticks, qty:o.qty,
+            queueAhead: o.qAhead < 0 ? 0 : o.qAhead, ageMs: t - o.activeAt,
+            state: t < o.activeAt ? 'PENDING' : 'LIVE' })),
+          pending: [...orders.values()].filter(o => t < o.activeAt).map(o => Object.freeze({
+            id:o.id, side:o.side, px:o.ticks * CFG.TICK, ticks:o.ticks, qty:o.qty,
+            queueAhead:0, ageMs:0, state:'PENDING' })),
+        };
+      },
+      submit(intents, now, fair, sigma) {
+        if (!intents || !intents.length) return;
+        tally(led, intents);
+        const lat = sim.latency.mmOrd;
+        for (const it of intents) {
+          if (it.type === Intent.HEDGE) { led.hedge(it.side, it.qty, fair, sigma); continue; }
+          if (it.type === Intent.PLACE) {
+            const id = seq++;
+            orders.set(id, { id, side:it.side, ticks:it.ticks, qty:it.qty,
+                             activeAt: now + lat, deadAt: Infinity, qAhead: -1 });
+          } else if (it.type === Intent.CANCEL) {
+            const o = orders.get(it.id); if (o) o.deadAt = Math.min(o.deadAt, now + lat);
+          } else if (it.type === Intent.TAKE) {
+            takes.push({ t: now + lat, side:it.side, qty:it.qty, limTicks:it.limTicks });
+          }
+        }
+      },
+      tick(now) {
+        for (const [id, o] of orders) if (now >= o.deadAt || o.qty <= EPS) orders.delete(id);
+        while (takes.length && takes[0].t <= now) {
+          const tk = takes.shift(); let rem = tk.qty;
+          for (const L of sim.lob.depth(sideOf(tk.side), CFG.BOOK_DEPTH)) {
+            if (rem <= EPS) break;
+            if (tk.side === Side.BUY ? L.ticks > tk.limTicks : L.ticks < tk.limTicks) break;
+            const f = Math.min(rem, L.qty); rem -= f;
+            led.onFill({ t: now, px: L.px, qty: f, side: tk.side, role:'TAKER', toxic:false }, sim.fair);
+          }
+        }
+      },
+      reset() { orders = new Map(); takes = []; seq = 1; },
+    };
+  }
+
+  /** Current two-sided quoting state, for uptime / quoted-spread metrics. */
+  function quoteState(view) {
+    let bid = 0, ask = 0, qa = null, n = 0;
+    for (const o of view.self.orders) {
+      if (o.state === 'PENDING') continue;
+      if (o.side === Side.BUY) bid = Math.max(bid, o.px);
+      else ask = ask ? Math.min(ask, o.px) : o.px;
+      qa = (qa || 0) + o.queueAhead; n++;
+    }
+    return { bid, ask, queueAhead: n ? qa / n : null };
+  }
+
+  return Object.freeze({ live, shadow, quoteState });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ engines/ — four market-making strategies behind one contract.         ║
+   ║ Each sees ONLY the redacted public view. None can reach client        ║
+   ║ pre-trade intent, because no such parameter exists in onTick().       ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Engines = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 在同一份公開視圖上實作四種造市決策邏輯
+    OWNS       : 報價幾何、庫存政策、毒性煞車、carry 傾斜
+    DEPENDS_ON : PublicMarketView（唯一輸入）
+    EMITS      : Intent[] { PLACE | CANCEL | TAKE | HEDGE }
+    DATA_READS : 聚合深度 · 公開成交帶 · 外部 fair · funding · 自身委託
+    FAILS      : RiskLimitBreachError（超出庫存上限時只降不增）
+    IDEMPOTENT : YES — onTick 為純函數，不改動傳入的 view
+    SECURITY   : PUBLIC
+    SIZE_LIMIT : 4 × 90 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, Intent, CFG } = Core;
+  const T  = (px) => Math.round(px / CFG.TICK);
+  const CX = (t, s, q) => ({ type: Intent.PLACE, side: s, ticks: t, qty: q });
+
+  /** Reconcile desired quotes against working orders, with a no-move band so we
+   *  do not throw away FIFO queue priority for a one-tick drift. */
+  function reconcile(view, desired, tol = 1) {
+    const out = [], taken = new Array(desired.length).fill(false);
+    for (const o of view.self.orders) {
+      let best = -1, bd = 1e9;
+      for (let k = 0; k < desired.length; k++) {
+        if (taken[k] || desired[k].side !== o.side) continue;
+        const d = Math.abs(desired[k].ticks - o.ticks);
+        if (d <= tol && d < bd) { bd = d; best = k; }
+      }
+      if (best >= 0) { taken[best] = true; continue; }
+      if (o.state !== 'PENDING') out.push({ type: Intent.CANCEL, id: o.id });
+    }
+    for (let k = 0; k < desired.length; k++)
+      if (!taken[k] && desired[k].qty >= CFG.LOT) out.push(desired[k]);
+    return out;
+  }
+
+  /** Avellaneda–Stoikov core, shared by E1 and E3.
+   *  r = s − q·γ·σ²·τ            (inventory-shifted reservation price)
+   *  δ = γ·σ²·τ + (2/γ)·ln(1+γ/κ)  (optimal total spread)                    */
+  function avellaneda(view, p) {
+    const sigma = Math.max(view.fair.sigma, 0.3);
+    const q = view.self.inventory;
+    const ref = 0.75 * view.fair.micro + 0.25 * (view.book.micro || view.fair.micro);
+    const dTot = p.gamma * sigma * sigma * p.horizon + (2 / p.gamma) * Math.log(1 + p.gamma / p.kappa);
+    const half = U.clamp(dTot / 2, CFG.TICK, 120 * CFG.TICK);
+    // q·γ·σ²·τ is quadratic in σ. Left unclamped, a vol spike pushes the
+    // reservation price further than the whole spread and both quotes land on
+    // the wrong side of the book. Cap the skew at 1.4 half-spreads — standard
+    // practice, and it keeps the engine two-sided.
+    const shift = U.clamp(q * p.gamma * sigma * sigma * p.horizon, -half * 1.4, half * 1.4);
+    return { r: ref - shift, half, sigma, shift };
+  }
+
+  /** A maker never crosses: clamp a quote to just inside the opposite touch. */
+  function noCross(view, side, ticks) {
+    const ba = view.book.bestAsk, bb = view.book.bestBid;
+    if (side === Side.BUY  && ba) return Math.min(ticks, T(ba) - 1);
+    if (side === Side.SELL && bb) return Math.max(ticks, T(bb) + 1);
+    return ticks;
+  }
+
+  /** Pull quotes whose buffer to fair has collapsed — this is the latency race.
+   *  `guardTicks` is the minimum buffer we insist on keeping: a HIGHER guard
+   *  pulls EARLIER, which is what a latency-advantaged engine wants.          */
+  function guardStale(view, guardTicks) {
+    const f = view.fair.micro, out = [];
+    for (const o of view.self.orders) {
+      if (o.state === 'PENDING') continue;
+      const buffer = (o.side === Side.BUY ? (f - o.px) : (o.px - f)) / CFG.TICK;
+      if (buffer < guardTicks) out.push({ type: Intent.CANCEL, id: o.id });
+    }
+    return out;
+  }
+
+  const mk = (defs) => { const p = {}; for (const d of defs) p[d.k] = d.v; return p; };
+
+  /* ══ E1 · Bid-Ask Spread Capture ═══════════════════════════════════════ */
+  const E1_D = [
+    { k:'gamma',  label:'γ 風險趨避', min:0.0005, max:0.02,  step:0.0005, v:0.005, fmt:v=>v.toFixed(4),
+      hint:'越大 → 保留價隨庫存偏移越激進，價差越寬' },
+    { k:'kappa',  label:'κ 簿口流動性', min:0.2,  max:6,     step:0.1,    v:1.5,   fmt:v=>v.toFixed(1),
+      hint:'越大 → 假設對手越密集，最適價差越窄' },
+    { k:'horizon',label:'τ 風險視界 (s)', min:5,  max:180,   step:5,      v:60,    fmt:v=>v+'s' },
+    { k:'size',   label:'每檔量 (BTC)', min:0.01, max:0.4,   step:0.01,   v:0.08,  fmt:v=>v.toFixed(2) },
+    { k:'levels', label:'階梯檔數',    min:1,     max:5,     step:1,      v:3,     fmt:v=>v|0 },
+    { k:'step',   label:'階梯間距 (tick)', min:1, max:8,     step:1,      v:2,     fmt:v=>v|0 },
+    { k:'maxInv', label:'庫存上限 (BTC)', min:0.1, max:3,    step:0.1,    v:0.9,   fmt:v=>v.toFixed(1) },
+    { k:'guard',  label:'撤單緩衝 (tick)', min:0.5, max:8, step:0.5, v:1.0, fmt:v=>v.toFixed(1),
+      hint:'報價與 fair 的緩衝低於此值才撤。E1 不是延遲引擎，設得低 → 反應慢 → 被撿走' },
+  ];
+  const E1 = { id:'E1', name:'Bid-Ask Spread Capture', sub:'Avellaneda–Stoikov', color:'var(--e1)',
+    desc:'保留價依庫存偏移、最適價差隨波動擴張，以階梯雙邊報價賺取價差。庫存風險完全自負。',
+    defs:E1_D, p:mk(E1_D), fast:true,
+    onTick(view) {
+      const p = this.p, { r, half } = avellaneda(view, p);
+      const q = view.self.inventory, rt = r / CFG.TICK, ht = half / CFG.TICK;
+      const out = [], desired = [];
+      if (Math.abs(q) > p.maxInv * 1.6) {                        // hard risk stop → flatten
+        const side = q > 0 ? Side.SELL : Side.BUY;
+        const lim = q > 0 ? T(view.fair.micro * 0.999) : T(view.fair.micro * 1.001);
+        out.push({ type: Intent.TAKE, side, qty: (Math.abs(q) - p.maxInv) * 0.6, limTicks: lim });
+      }
+      for (let i = 0; i < p.levels; i++) {
+        const off = ht + i * p.step, sz = p.size * (1 + i * 0.5);
+        if (q <  p.maxInv) desired.push(CX(noCross(view, Side.BUY,  Math.floor(rt - off)), Side.BUY,  sz));
+        if (q > -p.maxInv) desired.push(CX(noCross(view, Side.SELL, Math.ceil (rt + off)), Side.SELL, sz));
+      }
+      return out.concat(reconcile(view, desired, 2));
+    },
+    onFast(view) { return guardStale(view, this.p.guard); },
+  };
+
+  /* ══ E2 · Arbitrage & Hedging ══════════════════════════════════════════ */
+  const E2_D = [
+    { k:'edgeBps',  label:'報價邊際 (bps)', min:0.3, max:12, step:0.1, v:1.4, fmt:v=>v.toFixed(1),
+      hint:'必須覆蓋外部對沖成本 ≈ 1.4 bps（taker 1.0 + 滑價 0.4），否則每筆成交都虧' },
+    { k:'size',     label:'每檔量 (BTC)', min:0.01, max:0.4, step:0.01, v:0.07, fmt:v=>v.toFixed(2) },
+    { k:'takeEdge', label:'吃單門檻 (bps)', min:0, max:6, step:0.1, v:0.4, fmt:v=>v.toFixed(1),
+      hint:'本所報價偏離 fair 超過對沖成本 + 此值時主動吃單' },
+    { k:'takeMax',  label:'單次吃單上限 (BTC)', min:0.05, max:2, step:0.05, v:0.5, fmt:v=>v.toFixed(2) },
+    { k:'hedgeMin', label:'對沖觸發 delta', min:0.005, max:0.3, step:0.005, v:0.02, fmt:v=>v.toFixed(3),
+      hint:'越小 → delta 越乾淨，但對沖次數與成本越高' },
+    { k:'maxDepth', label:'最深掛單距觸價 (tick)', min:0, max:20, step:1, v:8, fmt:v=>v|0,
+      hint:'觸價比我們的成本底線還窄時，願意排到多深 — 設 0 則直接停止報價' },
+    { k:'maxInv',   label:'現貨庫存上限 (BTC)', min:0.1, max:3, step:0.1, v:1.0, fmt:v=>v.toFixed(1) },
+  ];
+  const E2 = { id:'E2', name:'Arbitrage & Hedging', sub:'Cross-venue delta-neutral', color:'var(--e2)',
+    desc:'本所價格脫錨時主動吃單套利，被動成交後立即到外部場館對沖。庫存風險趨近零，代價是對沖成本吃掉大部分價差。',
+    defs:E2_D, p:mk(E2_D), fast:true,
+    onTick(view) {
+      const p = this.p, f = view.fair.micro, out = [], desired = [];
+      const nd = view.self.netDelta;
+      if (Math.abs(nd) > p.hedgeMin)
+        out.push({ type: Intent.HEDGE, side: nd > 0 ? Side.SELL : Side.BUY, qty: Math.abs(nd) });
+
+      const halfT = f * p.edgeBps / 1e4 / CFG.TICK;
+      const bb = view.book.bestBid, ba = view.book.bestAsk, ft = f / CFG.TICK;
+      let bidT = Math.floor(ft - halfT), askT = Math.ceil(ft + halfT);
+      // Improve the touch only while still meeting our hedge-cost floor; if the
+      // book is already tighter than that floor, competing is value-destroying.
+      if (bb) { const bt = T(bb); if (bt + 1 <= bidT) bidT = bt + 1; else if (bt > bidT + p.maxDepth) bidT = null; }
+      if (ba) { const at = T(ba); if (at - 1 >= askT) askT = at - 1; else if (at < askT - p.maxDepth) askT = null; }
+      const q = view.self.inventory;
+      if (bidT !== null && q <  p.maxInv && (!ba || bidT < T(ba))) desired.push(CX(bidT, Side.BUY,  p.size));
+      if (askT !== null && q > -p.maxInv && (!bb || askT > T(bb))) desired.push(CX(askT, Side.SELL, p.size));
+      return out.concat(reconcile(view, desired, 2));
+    },
+    onFast(view) {
+      const p = this.p, f = view.fair.micro, out = [], inv = view.self.inventory;
+      const stale = guardStale(view, 2);
+      if (view.t - (this._lastTake || -1e9) < 60) return stale;      // one take in flight at a time
+      const cost = (CFG.EXT_TAKER_BPS + CFG.MM_TAKER_BPS + p.takeEdge) / 1e4 * f;
+      const room = (side) => side === Side.BUY ? p.maxInv - inv : p.maxInv + inv;
+      let q = 0, lim = null;
+      for (const L of view.book.asks) { if (L.px > f - cost) break; q += L.qty; lim = L.ticks; }
+      q = Math.min(q, p.takeMax, Math.max(0, room(Side.BUY)));
+      if (q > CFG.LOT) out.push({ type: Intent.TAKE, side: Side.BUY, qty: q, limTicks: lim });
+      q = 0; lim = null;
+      for (const L of view.book.bids) { if (L.px < f + cost) break; q += L.qty; lim = L.ticks; }
+      q = Math.min(q, p.takeMax, Math.max(0, room(Side.SELL)));
+      if (q > CFG.LOT) out.push({ type: Intent.TAKE, side: Side.SELL, qty: q, limTicks: lim });
+      if (out.length) this._lastTake = view.t;
+      return out.concat(stale);
+    },
+  };
+
+  /* ══ E3 · Microstructure Edge ══════════════════════════════════════════ */
+  const E3_D = [
+    { k:'gamma',   label:'γ 風險趨避', min:0.0005, max:0.02, step:0.0005, v:0.004, fmt:v=>v.toFixed(4) },
+    { k:'kappa',   label:'κ 簿口流動性', min:0.2, max:6, step:0.1, v:1.8, fmt:v=>v.toFixed(1) },
+    { k:'horizon', label:'τ 風險視界 (s)', min:5, max:180, step:5, v:45, fmt:v=>v+'s' },
+    { k:'size',    label:'每檔量 (BTC)', min:0.01, max:0.4, step:0.01, v:0.08, fmt:v=>v.toFixed(2) },
+    { k:'levels',  label:'階梯檔數', min:1, max:5, step:1, v:2, fmt:v=>v|0 },
+    { k:'step',    label:'階梯間距 (tick)', min:1, max:8, step:1, v:2, fmt:v=>v|0 },
+    { k:'vpinT',   label:'VPIN 煞車門檻', min:0.05, max:0.9, step:0.05, v:0.35, fmt:v=>v.toFixed(2),
+      hint:'VPIN 超過此值即視為毒性流，開始拉寬' },
+    { k:'brake',   label:'毒性煞車強度', min:0, max:8, step:0.25, v:3.0, fmt:v=>v.toFixed(2) },
+    { k:'skewOfi', label:'OFI 傾斜', min:0, max:6, step:0.25, v:2.0, fmt:v=>v.toFixed(2) },
+    { k:'guard',   label:'撤單緩衝 (tick)', min:0.5, max:8, step:0.5, v:2.0, fmt:v=>v.toFixed(1),
+      hint:'核心競速參數。緩衝低於此值立刻撤單 — 調高 = 更早退出 = 撤單勝率上升但成交變少' },
+    { k:'queueMax',label:'佇列前方量上限 (BTC)', min:0.1, max:4, step:0.1, v:1.2, fmt:v=>v.toFixed(1),
+      hint:'毒性升高時，排太後面的單直接撤 — 排隊位置差 = 只吃得到壞成交' },
+    { k:'maxInv',  label:'庫存上限 (BTC)', min:0.1, max:3, step:0.1, v:0.7, fmt:v=>v.toFixed(1) },
+  ];
+  const E3 = { id:'E3', name:'Microstructure Edge', sub:'Low-latency · VPIN-aware', color:'var(--e3)',
+    desc:'只用公開訊號（OFI／簿口失衡／VPIN／自身排隊位置）偵測毒性流，靠低延遲在掃單抵達前撤單。優勢來自速度與訊號，不是客戶委託。',
+    defs:E3_D, p:mk(E3_D), fast:true,
+    onTick(view) {
+      const p = this.p, S = view.signals, { r, half } = avellaneda(view, p);
+      const tox  = Math.max(0, S.vpin - p.vpinT) / Math.max(1e-6, 1 - p.vpinT);
+      const mult = 1 + p.brake * tox + 0.35 * Math.abs(S.ofi);
+      const skew = -(S.ofi * p.skewOfi + S.microDrift * 0.8 + S.staleness * 0.5);
+      const ct = r / CFG.TICK + skew, ht = half * mult / CFG.TICK;
+      const q = view.self.inventory, desired = [];
+      const runUp = S.ofi > 1.2 && tox > 0.35, runDn = S.ofi < -1.2 && tox > 0.35;
+      for (let i = 0; i < p.levels; i++) {
+        const off = ht + i * p.step, sz = p.size * (1 + i * 0.4);
+        if (q <  p.maxInv && !runDn) desired.push(CX(noCross(view, Side.BUY,  Math.floor(ct - off)), Side.BUY,  sz));
+        if (q > -p.maxInv && !runUp) desired.push(CX(noCross(view, Side.SELL, Math.ceil (ct + off)), Side.SELL, sz));
+      }
+      const out = reconcile(view, desired, 1);
+      if (S.vpin > p.vpinT)                                   // bad queue position + toxic flow ⇒ leave
+        for (const o of view.self.orders)
+          if (o.state !== 'PENDING' && o.queueAhead > p.queueMax && !out.some(x => x.id === o.id))
+            out.push({ type: Intent.CANCEL, id: o.id });
+      return out;
+    },
+    onFast(view) { return guardStale(view, this.p.guard); },
+  };
+
+  /* ══ E4 · Funding Rate Arbitrage ═══════════════════════════════════════ */
+  const E4_D = [
+    { k:'halfBps',  label:'基準半價差 (bps)', min:0.3, max:12, step:0.1, v:1.5, fmt:v=>v.toFixed(1) },
+    { k:'size',     label:'每檔量 (BTC)', min:0.01, max:0.4, step:0.01, v:0.07, fmt:v=>v.toFixed(2) },
+    { k:'lean',     label:'carry 傾斜強度', min:0, max:1, step:0.05, v:0.8, fmt:v=>v.toFixed(2),
+      hint:'資金費率為正時偏向累積現貨多頭（配對空永續收取資金費）' },
+    { k:'creditMax',label:'最大讓價 (bps)', min:0, max:4, step:0.1, v:1.5, fmt:v=>v.toFixed(1),
+      hint:'因為持有這條腿有 carry 收益，願意在該側讓出的價差' },
+    { k:'aprFull',  label:'滿檔傾斜 APR', min:0.05, max:1, step:0.05, v:0.25, fmt:v=>(v*100).toFixed(0)+'%' },
+    { k:'hedgeMin', label:'對沖觸發 delta', min:0.005, max:0.3, step:0.005, v:0.03, fmt:v=>v.toFixed(3) },
+    { k:'maxInv',   label:'carry 部位上限 (BTC)', min:0.1, max:5, step:0.1, v:1.5, fmt:v=>v.toFixed(1) },
+  ];
+  const E4 = { id:'E4', name:'Funding Rate Arbitrage', sub:'Delta-neutral carry', color:'var(--e4)',
+    desc:'用即時資金費率把庫存風險轉成持有收益：偏向累積被支付的那條腿，並以永續空單對沖成 delta≈0，賺 funding 而非方向。',
+    defs:E4_D, p:mk(E4_D), fast:false,
+    onTick(view) {
+      const p = this.p, F = view.funding, f = view.fair.micro, out = [], desired = [];
+      const apr  = F.rate * (24 / CFG.FUNDING_HOURS) * 365;
+      const lean = U.clamp(apr / p.aprFull, -1, 1) * p.lean;     // >0 ⇒ accumulate long spot
+      const credit = Math.min(p.creditMax, Math.abs(apr) * 6) * Math.sign(lean || 1);
+      const nd = view.self.netDelta;
+      if (Math.abs(nd) > p.hedgeMin)
+        out.push({ type: Intent.HEDGE, side: nd > 0 ? Side.SELL : Side.BUY, qty: Math.abs(nd) });
+
+      const q = view.self.inventory, ft = f / CFG.TICK;
+      const bidT = Math.floor(ft - f * (p.halfBps - lean * credit) / 1e4 / CFG.TICK);
+      const askT = Math.ceil (ft + f * (p.halfBps + lean * credit) / 1e4 / CFG.TICK);
+      const bb = view.book.bestBid, ba = view.book.bestAsk;
+      if (q <  p.maxInv) desired.push(CX(noCross(view, Side.BUY,  bidT), Side.BUY,  p.size * (1 + 0.6 * Math.max(0, lean))));
+      if (q > -p.maxInv) desired.push(CX(noCross(view, Side.SELL, askT), Side.SELL, p.size * (1 + 0.6 * Math.max(0, -lean))));
+      return out.concat(reconcile(view, desired, 2));
+    },
+    onFast() { return []; },
+  };
+
+  const ALL = [E1, E2, E3, E4];
+  for (const e of ALL) e.reset = function () { /* engines are stateless across resets */ };
+  return Object.freeze({ ALL, byId: Object.fromEntries(ALL.map(e => [e.id, e])) });
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ slices/chart — canvas primitives.  No business logic.                 ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const Chart = (() => {
+  const CSS = getComputedStyle(document.documentElement);
+  const C = (n) => CSS.getPropertyValue(n).trim() || '#888';
+
+  let uiScale = 1;
+  function fit(cv, h) {
+    const dpr = (window.devicePixelRatio || 1) * uiScale, w = cv.clientWidth || 200;
+    if (cv.width !== (w * dpr | 0) || cv.height !== (h * dpr | 0)) {
+      cv.width = w * dpr | 0; cv.height = h * dpr | 0; cv.style.height = h + 'px';
+    }
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    return { g, w, h };
+  }
+  function grid(g, w, h, pad, rows) {
+    g.strokeStyle = C('--line'); g.lineWidth = 1;
+    for (let i = 0; i <= rows; i++) {
+      const y = Math.round(pad + (h - pad * 2) * i / rows) + .5;
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+    }
+  }
+  const sc = (v, lo, hi, h, pad) => h - pad - (v - lo) / Math.max(hi - lo, 1e-9) * (h - pad * 2);
+
+  /** Several rings on one axis; the thick one is the live engine. */
+  function multiLine(cv, series, h, opts) {
+    opts = opts || {};
+    const { g, w } = fit(cv, h), pad = 6;
+    let lo = Infinity, hi = -Infinity;
+    for (const s of series) { if (!s.ring.len) continue; const mm = s.ring.minmax(); lo = Math.min(lo, mm[0]); hi = Math.max(hi, mm[1]); }
+    if (!isFinite(lo)) { lo = -1; hi = 1; }
+    if (opts.zero) { lo = Math.min(lo, 0); hi = Math.max(hi, 0); }
+    const sp = (hi - lo) * 0.12 || 1; lo -= sp; hi += sp;
+    grid(g, w, h, pad, 2);
+    if (lo < 0 && hi > 0) {
+      const y = Math.round(sc(0, lo, hi, h, pad)) + .5;
+      g.strokeStyle = C('--line2'); g.setLineDash([2, 3]);
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); g.setLineDash([]);
+    }
+    for (const s of series) {
+      const n = s.ring.len; if (n < 2) continue;
+      g.strokeStyle = s.color; g.lineWidth = s.thick ? 1.6 : 0.9;
+      g.globalAlpha = s.thick ? 1 : 0.42;
+      g.beginPath();
+      for (let k = 0; k < n; k++) {
+        const x = w * k / (n - 1), y = sc(s.ring.at(k), lo, hi, h, pad);
+        k ? g.lineTo(x, y) : g.moveTo(x, y);
+      }
+      g.stroke(); g.globalAlpha = 1;
+    }
+  }
+
+  /** Signed area — inventory above / below zero. */
+  function signedArea(cv, ring, h, color) {
+    const { g, w } = fit(cv, h), pad = 6, n = ring.len;
+    const mm = ring.minmax();
+    const m = Math.max(Math.abs(mm[0]), Math.abs(mm[1]), 0.05), lo = -m * 1.2, hi = m * 1.2;
+    grid(g, w, h, pad, 2);
+    const y0 = sc(0, lo, hi, h, pad);
+    g.strokeStyle = C('--line2'); g.setLineDash([2, 3]);
+    g.beginPath(); g.moveTo(0, y0 + .5); g.lineTo(w, y0 + .5); g.stroke(); g.setLineDash([]);
+    if (n < 2) return;
+    g.beginPath(); g.moveTo(0, y0);
+    for (let k = 0; k < n; k++) g.lineTo(w * k / (n - 1), sc(ring.at(k), lo, hi, h, pad));
+    g.lineTo(w, y0); g.closePath();
+    const gr = g.createLinearGradient(0, pad, 0, h - pad);
+    gr.addColorStop(0, C('--up') + '4d'); gr.addColorStop(.5, C('--up') + '00'); gr.addColorStop(1, C('--dn') + '4d');
+    g.fillStyle = gr; g.fill();
+    g.strokeStyle = color; g.lineWidth = 1.3; g.beginPath();
+    for (let k = 0; k < n; k++) { const x = w * k / (n - 1), y = sc(ring.at(k), lo, hi, h, pad); k ? g.lineTo(x, y) : g.moveTo(x, y); }
+    g.stroke();
+  }
+
+  /** 0..1 gauge with a toxicity threshold band — VPIN. */
+  function gauge(cv, ring, h, thresh) {
+    const { g, w } = fit(cv, h), pad = 6;
+    const yT = sc(thresh, 0, 1, h, pad);
+    g.fillStyle = C('--dn') + '14'; g.fillRect(0, pad, w, Math.max(0, yT - pad));
+    grid(g, w, h, pad, 2);
+    g.strokeStyle = C('--dn') + '77'; g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(0, Math.round(yT) + .5); g.lineTo(w, Math.round(yT) + .5); g.stroke(); g.setLineDash([]);
+    const n = ring.len; if (n < 2) return;
+    g.beginPath();
+    for (let k = 0; k < n; k++) {
+      const x = w * k / (n - 1), yy = sc(U.clamp(ring.at(k), 0, 1), 0, 1, h, pad);
+      k ? g.lineTo(x, yy) : g.moveTo(x, yy);
+    }
+    g.strokeStyle = C('--warn'); g.lineWidth = 1.3; g.stroke();
+  }
+
+  /** Markout curve: bars across tau. Positive = we kept the spread. */
+  function markout(cv, vals, labels, h) {
+    const { g, w } = fit(cv, h), pad = 12;
+    const fin = vals.filter(v => v != null);
+    const m = Math.max(1, ...fin.map(Math.abs)) * 1.25;
+    const y0 = sc(0, -m, m, h, pad);
+    grid(g, w, h, pad, 2);
+    g.strokeStyle = C('--line2'); g.beginPath(); g.moveTo(0, y0 + .5); g.lineTo(w, y0 + .5); g.stroke();
+    const bw = w / vals.length;
+    g.font = '7.5px ui-monospace,monospace'; g.textAlign = 'center';
+    for (let i = 0; i < vals.length; i++) {
+      const x = bw * i + bw / 2;
+      g.fillStyle = C('--dim'); g.fillText(labels[i], x, h - 2);
+      if (vals[i] == null) continue;
+      const y = sc(vals[i], -m, m, h, pad);
+      g.fillStyle = vals[i] >= 0 ? C('--up') : C('--dn');
+      g.fillRect(x - bw * .3, Math.min(y, y0), bw * .6, Math.max(1, Math.abs(y - y0)));
+    }
+    g.textAlign = 'left';
+  }
+  return { multiLine, signedArea, gauge, markout, C, setScale(v) { uiScale = v; } };
+})();
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ slices/ui — DOM rendering. Zero business logic; reads snapshots only. ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+const UI = ((Core, U) => {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 把快照畫成交易終端畫面，且不觸發不必要的 DOM 寫入
+    OWNS       : DOM 節點與差異化寫入快取
+    DEPENDS_ON : 純快照物件（不持有模擬器或帳本參考）
+    FAILS      : —
+    PERFORMANCE: 值未變則完全不碰 textContent；圖表全走 Canvas
+    SIZE_LIMIT : 260 行
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Side, CFG } = Core, F = U.F;
+  const $ = (id) => document.getElementById(id);
+  const cache = new Map();
+  let uid = 0;
+  function set(el, txt, cls) {
+    if (!el) return;
+    const key = el.id || (el.__k || (el.__k = 'x' + (++uid)));
+    const v = txt + '' + (cls || '');
+    if (cache.get(key) === v) return;
+    cache.set(key, v);
+    el.textContent = txt;
+    if (cls !== undefined) el.className = cls;
+  }
+  const sgn = (v) => v > 1e-9 ? 'up' : v < -1e-9 ? 'dn' : '';
+
+  function tiles(host, specs) {
+    if (host.childElementCount === specs.length) return;
+    host.innerHTML = specs.map(s =>
+      '<div class="tile"><span class="k">' + s[1] + '</span>' +
+      '<span class="v' + (s[2] ? ' sm' : '') + '" id="' + host.id + '_' + s[0] + '">—</span>' +
+      '<span class="s" id="' + host.id + '_' + s[0] + '_s"></span></div>').join('');
+  }
+  const put = (host, key, val, cls, sub) => {
+    const e = $(host + '_' + key);
+    if (e) set(e, val, (e.className.indexOf('sm') >= 0 ? 'v sm' : 'v') + (cls ? ' ' + cls : ''));
+    if (sub !== undefined) set($(host + '_' + key + '_s'), sub, 's');
+  };
+
+  let fundLabel = '';
+  const PNL_TILES = [
+    ['total', 'Total P&L', 0], ['spread', 'Spread Capture', 0], ['inventory', 'Inventory MTM', 0],
+    ['fees', 'Fees / Rebate', 0], ['hedge', 'Hedge Leg', 0], ['funding', 'Funding Accrued', 0],
+  ];
+  const MET_TILES = [
+    ['fillrate', 'Fills / min', 1], ['vol', 'Filled Volume', 1], ['eff', 'Effective Spread', 1],
+    ['adv', 'Adverse Selection', 1], ['real', 'Realized Spread', 1], ['uptime', 'Quote Uptime', 1],
+    ['qspread', 'Quoted Spread', 1], ['queue', 'Avg Queue Ahead', 1], ['q2t', 'Quote / Trade', 1],
+    ['inv', 'Inventory', 1], ['delta', 'Net Delta', 1], ['var', 'Inventory VaR 60s', 1],
+    ['peak', 'Peak |Inventory|', 1], ['sharpe', 'Sharpe (daily)', 1], ['dd', 'Max Drawdown', 1],
+    ['vpin', 'VPIN', 1], ['toxic', 'Toxic Fill Share', 1], ['race', 'Cancel-Race Won', 1],
+    ['lat', 'Reaction Latency', 1], ['hcost', 'Hedge Cost', 1],
+  ];
+  const SESS_TILES = [
+    ['pnl', 'Session P&L (real)', 0], ['fills', 'Live Fills', 1], ['vol', 'Live Volume', 1],
+    ['time', 'Session Time', 1], ['engines', 'Engines Used', 1], ['viol', 'Barrier Violations', 1],
+  ];
+
+  return {
+    $, set, sgn, PNL_TILES, MET_TILES, SESS_TILES,
+    setFundLabel(v) { fundLabel = v; },
+
+    header(f, st) {
+      const b = $('badge');
+      if (!b.classList.contains(f.state)) { b.className = f.state; b.lastElementChild.textContent = f.state; }
+      set($('fairPx'), f.micro ? F.px(f.micro) : '—', 'num');
+      set($('fairChg'), (f.chg60 >= 0 ? '+' : '') + (f.chg60 * 100).toFixed(3) + '%', 'hval num ' + sgn(f.chg60));
+      set($('fairSigma'), '$' + f.sigma.toFixed(2), 'hval num');
+      const chips = f.venues.map(v =>
+        '<span class="vchip ' + (v.ok ? (v.stale ? 'on stale' : 'on') : '') + '"><i></i>' + v.name + '</span>').join('');
+      const vc = $('venueChips'); if (vc.innerHTML !== chips) vc.innerHTML = chips;
+      const fr = f.funding;
+      set($('fundingRate'), (fr.rate * 100).toFixed(4) + '%', 'hval num ' + sgn(fr.rate));
+      set($('fundingCd'), (fr.nextTime ? F.cd(fr.nextTime - Date.now()) : '—') + ' · ' +
+          (fr.rate * 3 * 365 * 100).toFixed(1) + '%', 'hval num');
+      set($('staleness'), (st.stale >= 0 ? '+' : '') + st.stale.toFixed(1) + ' tk',
+          'hval num ' + (Math.abs(st.stale) > 4 ? 'warn' : ''));
+      set($('simClock'), F.clock(st.t), 'hval num');
+      set($('lobMeta'), 'tick $' + CFG.TICK + ' · maker ' + CFG.MAKER_FEE_BPS + 'bp · ' + st.arbEvents + ' arb sweeps', 'sp dim');
+    },
+
+    engines(list, liveId, snaps) {
+      const host = $('engineList');
+      if (host.childElementCount !== list.length) {
+        host.innerHTML = list.map(e =>
+          '<div class="eng" data-eng="' + e.id + '">' +
+            '<div class="eng-t"><span class="eng-id">' + e.id + '</span><span class="eng-n">' + e.name + '</span>' +
+            '<span class="eng-m" id="em_' + e.id + '">SHADOW</span></div>' +
+            '<div class="eng-d">' + e.sub + ' · ' + e.desc + '</div>' +
+            '<div class="eng-s"><span class="dim">P&L</span><b id="ep_' + e.id + '">—</b>' +
+            '<span class="dim">INV</span><b id="ei_' + e.id + '">—</b>' +
+            '<span class="dim">FILLS</span><b id="ef_' + e.id + '">—</b></div>' +
+          '</div>').join('');
+      }
+      for (const e of list) {
+        const el = host.querySelector('[data-eng="' + e.id + '"]'), s = snaps[e.id], on = e.id === liveId;
+        if (el.classList.contains('live') !== on) el.classList.toggle('live', on);
+        set($('em_' + e.id), on ? 'LIVE' : 'SHADOW', 'eng-m');
+        set($('ep_' + e.id), F.sgn(s.pnl.total), sgn(s.pnl.total));
+        set($('ei_' + e.id), F.qty(s.inv, 3), Math.abs(s.inv) > 0.0005 ? sgn(s.inv) : 'dim');
+        set($('ef_' + e.id), F.int(s.fills), 'dim');
+      }
+    },
+
+    params(engine, onChange) {
+      const host = $('paramBox');
+      if (host.dataset.eng === engine.id) return;
+      host.dataset.eng = engine.id;
+      host.innerHTML = engine.defs.map(d =>
+        '<div class="prm"><label>' + d.label + '</label>' +
+        '<output id="po_' + d.k + '">' + d.fmt(engine.p[d.k]) + '</output>' +
+        '<input type="range" id="pi_' + d.k + '" min="' + d.min + '" max="' + d.max +
+        '" step="' + d.step + '" value="' + engine.p[d.k] + '">' +
+        (d.hint ? '<span class="hint">' + d.hint + '</span>' : '') + '</div>').join('');
+      for (const d of engine.defs) {
+        $('pi_' + d.k).addEventListener('input', (ev) => {
+          const v = +ev.target.value; engine.p[d.k] = v;
+          $('po_' + d.k).textContent = d.fmt(v); onChange && onChange(d.k, v);
+        });
+      }
+    },
+
+    lob(book, mmQty) {
+      let maxQ = 0.001;
+      for (const l of book.bids) if (l.qty > maxQ) maxQ = l.qty;
+      for (const l of book.asks) if (l.qty > maxQ) maxQ = l.qty;
+      const empty = '<div class="lrow"><span class="lv"></span><span class="px dim">—</span><span class="qt"></span><span class="mine"></span></div>';
+      const row = (l, side, i) => {
+        const mine = mmQty.get(l.ticks) || 0;
+        return '<div class="lrow ' + side + (mine ? ' has-mine' : '') + '">' +
+          '<div class="bar" style="width:' + (l.qty / maxQ * 62).toFixed(1) + '%"></div>' +
+          '<span class="lv">' + (i + 1) + '</span><span class="px num">' + F.px(l.px) + '</span>' +
+          '<span class="qt num">' + F.qty(l.qty, 3) + '</span>' +
+          '<span class="mine num">' + (mine ? F.qty(mine, 3) : '') + '</span></div>';
+      };
+      const A = [], B = [];
+      for (let i = CFG.LEVELS - 1; i >= 0; i--) A.push(book.asks[i] ? row(book.asks[i], 'ask', i) : empty);
+      for (let i = 0; i < CFG.LEVELS; i++)      B.push(book.bids[i] ? row(book.bids[i], 'bid', i) : empty);
+      const ah = A.join(''), bh = B.join('');
+      if ($('lobAsks').innerHTML !== ah) $('lobAsks').innerHTML = ah;
+      if ($('lobBids').innerHTML !== bh) $('lobBids').innerHTML = bh;
+      set($('midPx'), book.mid ? F.px(book.mid) : '—', 'px num');
+      set($('midSpread'), book.spread ? (book.spread / CFG.TICK).toFixed(0) + ' tick' : '—', 'qt num');
+      set($('midBps'), book.mid ? (book.spread / book.mid * 1e4).toFixed(2) + ' bp' : '—', 'mine num');
+    },
+
+    tape(rows) {
+      const out = [];
+      for (let i = rows.length - 1, n = 0; i >= 0 && n < 44; i--, n++) {
+        const t = rows[i];
+        out.push('<div class="tp ' + (t.side === Side.BUY ? 'b' : 's') + (t.toxic ? ' tox' : '') +
+          (t.mine ? ' mine' : '') + '"><span class="t num">' + (t.t / 1000).toFixed(1) + '</span>' +
+          '<span class="px num">' + F.px(t.px) + '</span><span class="q num">' + F.qty(t.qty, 4) + '</span>' +
+          '<span class="k">' + (t.mine ? 'MINE' : t.toxic ? 'TOX' : '') + '</span></div>');
+      }
+      const h = out.join(''), el = $('tape');
+      if (el.innerHTML !== h) el.innerHTML = h;
+    },
+
+    pnl(snap, engine) {
+      tiles($('pnlGrid'), PNL_TILES);
+      set($('pnlEngName'), engine.id + ' · ' + engine.name, 'sp dim');
+      const p = snap.pnl;
+      const share = (v) => Math.abs(p.total) > 1e-6 ? (v / Math.abs(p.total) * 100).toFixed(0) + '% of |total|' : '';
+      put('pnlGrid', 'total', F.sgn(p.total), sgn(p.total), 'peak DD ' + F.usd(snap.maxDD));
+      put('pnlGrid', 'spread', F.sgn(p.spread), sgn(p.spread), share(p.spread));
+      put('pnlGrid', 'inventory', F.sgn(p.inventory), sgn(p.inventory), share(p.inventory));
+      put('pnlGrid', 'fees', F.sgn(p.fees), sgn(p.fees), (CFG.MAKER_FEE_BPS < 0 ? 'rebate ' : 'fee ') + Math.abs(CFG.MAKER_FEE_BPS) + ' bp');
+      put('pnlGrid', 'hedge', F.sgn(p.hedge), sgn(p.hedge),
+          snap.hedgeVol > 0 ? F.qty(snap.hedgeVol, 2) + ' BTC hedged' : 'no hedging');
+      put('pnlGrid', 'funding', F.sgn(p.funding, 3), sgn(p.funding),
+          Math.abs(snap.hedgeInv) > 1e-6 ? 'carry ' + F.qty(-snap.hedgeInv, 2) + ' perp · ' + fundLabel : 'no carry leg');
+    },
+
+    metrics(snap, sim, vpin) {
+      tiles($('metricGrid'), MET_TILES);
+      const g = 'metricGrid', race = sim.savedVol + sim.toxicVol;
+      put(g, 'fillrate', snap.fillsPerMin.toFixed(1), '', F.int(snap.fills) + ' fills');
+      put(g, 'vol', F.qty(snap.volume, 3), '', F.usd(snap.notional, 0));
+      put(g, 'eff', F.bps(snap.effSpreadBps), UI.sgn(snap.effSpreadBps), 'at fill vs fair');
+      put(g, 'adv', snap.adverseBps == null ? '—' : F.bps(snap.adverseBps),
+          snap.adverseBps == null ? '' : snap.adverseBps > 0.02 ? 'dn' : 'up', 'eff − realized · 0.1s→15s');
+      put(g, 'real', snap.realizedBps == null ? '—' : F.bps(snap.realizedBps),
+          UI.sgn(snap.realizedBps || 0), snap.realizedBps == null ? 'awaiting 15s markout' : 'kept after 15s');
+      put(g, 'uptime', F.pct(snap.quoteUptime), '', 'two-sided');
+      put(g, 'qspread', F.bps(snap.quotedSpreadBps), '', 'our own quotes');
+      put(g, 'queue', F.qty(snap.avgQueueAhead, 2), '', 'BTC ahead of us');
+      put(g, 'q2t', snap.quoteToTrade.toFixed(1), '', F.int(snap.ordersSent) + ' sent');
+      put(g, 'inv', F.qty(snap.inv, 3), UI.sgn(snap.inv), 'spot BTC');
+      put(g, 'delta', F.qty(snap.netDelta, 3), Math.abs(snap.netDelta) < 0.01 ? 'up' : 'warn',
+          Math.abs(snap.hedgeInv) > 1e-6 ? 'perp ' + F.qty(snap.hedgeInv, 3) : 'unhedged');
+      put(g, 'var', F.usd(snap.invVaR, 0), snap.invVaR > 400 ? 'dn' : '', '95% · 60s horizon');
+      put(g, 'peak', F.qty(snap.invPeak, 3), '', 'TWA ' + F.qty(snap.invTwa, 3));
+      put(g, 'sharpe', snap.sharpe ? snap.sharpe.toFixed(1) : '—', UI.sgn(snap.sharpe), 'daily-equiv, 1s P&L');
+      put(g, 'dd', F.usd(snap.maxDD), snap.maxDD > 0 ? 'dn' : '', 'peak to trough');
+      put(g, 'vpin', vpin.toFixed(3), vpin > 0.35 ? 'dn' : 'up', 'bulk volume classified');
+      put(g, 'toxic', F.pct(snap.toxicPct), snap.toxicPct > 0.3 ? 'dn' : '', F.int(snap.toxicFills) + ' toxic fills');
+      put(g, 'race', race > 0 ? F.pct(sim.savedVol / race) : '—', race > 0 && sim.savedVol / race > 0.5 ? 'up' : 'dn',
+          F.qty(sim.savedVol, 2) + ' saved / ' + F.qty(sim.toxicVol, 2) + ' hit');
+      put(g, 'lat', sim.latency.toFixed(2) + ' ms', sim.latency < 3 ? 'up' : 'warn',
+          'arb ' + sim.arbLatency.toFixed(2) + ' ms');
+      put(g, 'hcost', F.usd(snap.hedgeCost), snap.hedgeCost > 0 ? 'dn' : '',
+          'delta open ' + F.pct(snap.unhedgedPct, 0) + ' of time');
+    },
+
+    compare(list, liveId, snaps) {
+      const rows = list.map(e => {
+        const s = snaps[e.id];
+        return '<tr class="' + (e.id === liveId ? 'live' : '') + '"><td><span style="color:' + e.color +
+          '">■</span> ' + e.id + ' ' + e.name + '</td>' +
+          '<td class="' + (e.id === liveId ? 'up' : 'dim') + '">' + (e.id === liveId ? 'LIVE' : 'SHADOW') + '</td>' +
+          '<td class="' + sgn(s.pnl.total) + '">' + F.sgn(s.pnl.total) + '</td>' +
+          '<td class="' + sgn(s.pnl.spread) + '">' + F.sgn(s.pnl.spread) + '</td>' +
+          '<td class="' + sgn(s.pnl.inventory) + '">' + F.sgn(s.pnl.inventory) + '</td>' +
+          '<td>' + F.qty(s.inv, 3) + '</td><td>' + F.int(s.fills) + '</td>' +
+          '<td class="' + sgn(s.effSpreadBps) + '">' + s.effSpreadBps.toFixed(2) + '</td>' +
+          '<td class="' + (s.adverseBps == null ? 'dim' : s.adverseBps > 0.02 ? 'dn' : 'up') + '">' +
+            (s.adverseBps == null ? '—' : s.adverseBps.toFixed(2)) + '</td>' +
+          '<td class="' + (s.toxicPct > .3 ? 'dn' : '') + '">' + (s.toxicPct * 100).toFixed(0) + '%</td>' +
+          '<td class="' + sgn(s.sharpe) + '">' + s.sharpe.toFixed(1) + '</td></tr>';
+      }).join('');
+      const h = '<thead><tr><th>Engine</th><th>Mode</th><th>Total</th><th>Spread</th><th>Inv MTM</th>' +
+        '<th>Inv</th><th>Fills</th><th>Eff bp</th><th>AdvSel bp</th><th>Toxic</th><th>Sharpe</th></tr></thead>' +
+        '<tbody>' + rows + '</tbody>';
+      const el = $('cmpTable'); if (el.innerHTML !== h) el.innerHTML = h;
+    },
+
+    session(s) {
+      tiles($('sessionGrid'), SESS_TILES);
+      put('sessionGrid', 'pnl', F.sgn(s.pnl), sgn(s.pnl), 'realised while LIVE');
+      put('sessionGrid', 'fills', F.int(s.fills), '', F.usd(s.notional, 0));
+      put('sessionGrid', 'vol', F.qty(s.volume, 3) + ' BTC', '', 'share ' + F.pct(s.share, 1) + ' of tape');
+      put('sessionGrid', 'time', F.clock(s.ms), '', 'speed ' + s.speed + 'x');
+      put('sessionGrid', 'engines', s.used.join(' → ') || '—', '', s.switches + ' switches');
+      put('sessionGrid', 'viol', String(s.viol), s.viol ? 'dn' : 'up', s.viol ? 'blocked & logged' : 'barrier clean');
+    },
+
+    compliance(led, onPeek) {
+      const host = $('complianceBox');
+      if (!host.dataset.built) {
+        host.dataset.built = '1';
+        host.innerHTML =
+          '<div style="font-size:8.5px;color:var(--dim);line-height:1.5;margin-bottom:5px">' +
+          '引擎唯一的輸入是 <b style="color:var(--txt)">Barrier.publish()</b> 的回傳值。' +
+          '下列紅色通道不是它的參數，因此不存在通往任何引擎的程式路徑。</div>' +
+          '<div id="aclOk"></div><div class="sep"></div><div id="aclNo"></div>' +
+          '<div class="sep"></div><button class="btn danger" id="peekBtn" style="width:100%">ATTEMPT PEEK — 讀取客戶未成交委託</button>' +
+          '<div id="peekOut" style="font-size:8.5px;line-height:1.45;margin-top:5px;color:var(--dim)"></div>';
+        $('peekBtn').addEventListener('click', onPeek);
+      }
+      const l = led();
+      const ok = l.allowed.map(a => '<div class="acl ok"><span class="ic">✓</span><span class="nm" title="' + a.desc +
+        '">' + a.desc + '</span><span class="ct">' + F.int(a.n) + '</span></div>').join('');
+      const no = l.denied.map(a => '<div class="acl no"><span class="ic">✕</span><span class="nm" title="' + a.desc +
+        '">' + a.desc + '</span><span class="ct">' + a.n + '</span></div>').join('');
+      if ($('aclOk').innerHTML !== ok) $('aclOk').innerHTML = ok;
+      if ($('aclNo').innerHTML !== no) $('aclNo').innerHTML = no;
+      set($('barrierState'), l.violations ? '● ' + l.violations + ' BLOCKED' : '● ENFORCED',
+          'sp'); $('barrierState').style.color = l.violations ? 'var(--warn)' : 'var(--up)';
+    },
+
+    log(msg, cls) {
+      const el = $('eventLog');
+      const d = document.createElement('div');
+      d.className = 'lg ' + (cls || 'info');
+      d.innerHTML = '<span class="t">' + F.hhmmss(new Date()) + '</span><span>' + msg + '</span>';
+      el.insertBefore(d, el.firstChild);
+      while (el.childElementCount > 120) el.removeChild(el.lastChild);
+    },
+  };
+})(Core, U);
+
+
+/* ╔══════════════════════════════════════════════════════════════════════╗
+   ║ shell/ — dependency wiring and the dual clock.  The only place that   ║
+   ║ knows about concrete implementations.                                 ║
+   ╚══════════════════════════════════════════════════════════════════════╝ */
+(function Shell(Core, U, Feed, Sim, Barrier, Metrics, Exec, Engines, UI, Chart) {
+/*  MODULE CONTRACT ═══════════════════════════════════════════════════════
+    MISSION    : 組裝所有層並以雙時鐘驅動 — 模擬鐘固定 10ms，渲染鐘 rAF
+    OWNS       : liveId、session 累計、時鐘與速度倍率
+    DEPENDS_ON : 全部（唯一被允許認識具體實作的模組）
+    FAILS      : 引擎例外只記錄不中斷，模擬持續
+    PERFORMANCE: 模擬 100 步/秒 @1×；渲染節流 數字 12fps / 圖表 8fps
+    IDEMPOTENT : NO
+    SIZE_LIMIT : 240 行
+    ADR_REFS   : ADR-003 雙時鐘與零配置熱路徑
+    ═══════════════════════════════════════════════════════════════════════ */
+  const { Actor, CFG } = Core, F = U.F;
+  const log = (m, c) => UI.log(m, c);
+
+  const feed = Feed.create(log);
+  const sim  = Sim.create(log);
+  const led  = {}, ex = {};
+  let liveId = 'E1', speed = 1, fundMult = 60;
+  let fnd = { rate: 0.0001, nextTime: 0, markPx: 0, indexPx: 0, premiumBps: 0 };
+
+  const vpinRing = new U.Ring(CFG.SERIES_LEN);
+  const session = { locked: { pnl:0, fills:0, volume:0, notional:0 }, base: null,
+                    ms:0, switches:0, used:[liveId] };
+
+  const snapOf = (id) => led[id].snapshot(sim.fair || 1, sim.sigma);
+  const baseOf = (id) => { const s = snapOf(id);
+    return { pnl: s.pnl.total, fills: s.fills, volume: s.volume, notional: s.notional }; };
+
+  /* ── executors: exactly one LIVE, the rest SHADOW on identical flow ──── */
+  function buildExecs() {
+    for (const e of Engines.ALL)
+      ex[e.id] = e.id === liveId ? Exec.live(sim, led[e.id]) : Exec.shadow(sim, led[e.id]);
+  }
+
+  function setLive(id) {
+    if (id === liveId || !Engines.byId[id]) return;
+    const a = snapOf(liveId), b = session.base;
+    session.locked.pnl      += a.pnl.total - b.pnl;
+    session.locked.fills    += a.fills     - b.fills;
+    session.locked.volume   += a.volume    - b.volume;
+    session.locked.notional += a.notional  - b.notional;
+    for (const oid of [...sim.mmIds]) sim.lob.cancel(oid);   // desk handover: pull the old book
+    sim.mmIds.clear();
+    const old = liveId; liveId = id;
+    ex[old] = Exec.shadow(sim, led[old]);
+    ex[id]  = Exec.live(sim, led[id]);
+    session.base = baseOf(id); session.switches++;
+    if (!session.used.includes(id)) session.used.push(id);
+    Barrier.reset();
+    UI.params(Engines.byId[id], null);
+    log('engine ' + old + ' → ' + id + ' · ' + Engines.byId[id].name + ' (' + old + ' quotes pulled)', 'ok');
+  }
+
+  /* ── simulation step ─────────────────────────────────────────────────── */
+  function stepSim(dt) {
+    const f = feed.snapshot();
+    fnd = f.funding;
+    sim.step(dt, f);
+    const now = sim.t, fair = sim.fair;
+    Metrics.Trail.push(now, fair);
+    const trades = sim.takeNewTrades();
+    const book = Barrier.marketBook(sim.lob);
+    const delayed = sim.fairAt(now - sim.latency.mmMd);
+    const S = sim.sig.update(book, trades, delayed, dt);
+    const fairView = { micro: delayed, mid: delayed, sigma: sim.sigma, latencyMs: sim.latency.mmMd };
+    // Pull fast, replace deliberately: risk-driven cancels ride the 10 ms
+    // market-data path, but re-quoting waits 50 ms. Chasing every tick with a
+    // fresh quote just re-arms the same pick-off during a trend and throws away
+    // FIFO queue priority for nothing.
+    const doQuote = (++qStep % 5) === 0;
+
+    for (const e of Engines.ALL) {
+      const X = ex[e.id], L = led[e.id];
+      if (X.tick) X.tick(now);
+      const view = Barrier.publish({ t: now, lob: sim.lob, book, tape: sim.tape, fair: fairView,
+                                     funding: fnd, self: X.self(now), signals: S, audit: e.id === liveId });
+      if (doQuote) {
+        let its = null;
+        try { its = e.onTick(view); }
+        catch (err) { log(e.id + ' onTick: ' + err.message, 'err'); }
+        if (its) X.submit(its, now, fair, sim.sigma);
+      }
+      L.accrueFunding(fnd.rate, fnd.markPx || fair, dt, fundMult);
+      L.mark(now, dt, fair, Exec.quoteState(view), e.id === liveId);
+    }
+    session.ms += dt;
+  }
+
+  /* ── fast path: fair has moved, our market-data latency has elapsed ──── */
+  function onFast(t) {
+    const book = Barrier.marketBook(sim.lob);
+    const delayed = sim.fairAt(t - sim.latency.mmMd);
+    const fairView = { micro: delayed, mid: delayed, sigma: sim.sigma, latencyMs: sim.latency.mmMd };
+    for (const e of Engines.ALL) {
+      if (!e.fast) continue;
+      const X = ex[e.id];
+      const view = Barrier.publish({ t, lob: sim.lob, book, tape: sim.tape, fair: fairView,
+                                     funding: fnd, self: X.self(t), signals: sim.sig.S, audit: e.id === liveId });
+      let its = null;
+      try { its = e.onFast(view); } catch (err) { log(e.id + ' onFast: ' + err.message, 'err'); }
+      if (its && its.length) X.submit(its, t, sim.fair, sim.sigma);
+    }
+  }
+
+  /* ── rendering ───────────────────────────────────────────────────────── */
+  let tNum = 0, tBook = 0, tChart = 0, snaps = null, qStep = 0;
+  function mmQtyMap() {
+    const m = new Map();
+    for (const o of sim.lob.orders.values())
+      if (o.owner === Actor.MM) m.set(o.ticks, (m.get(o.ticks) || 0) + o.qty);
+    return m;
+  }
+  const chartH = (id) => Math.max(58, (UI.$(id).parentElement.clientHeight | 0) - 19);
+
+  function render(rt) {
+    const f = feed.snapshot();
+    const book = Barrier.marketBook(sim.lob);
+
+    if (rt - tBook > 55) {
+      tBook = rt;
+      UI.lob(book, mmQtyMap());
+      UI.tape(sim.tape);
+      UI.header(f, { stale: book.mid ? (sim.fair - book.mid) / CFG.TICK : 0,
+                     t: sim.t, arbEvents: sim.stats.arbEvents });
+    }
+    if (rt - tNum > 85) {
+      tNum = rt;
+      snaps = {};
+      for (const e of Engines.ALL) snaps[e.id] = snapOf(e.id);
+      const live = snaps[liveId], eng = Engines.byId[liveId];
+      UI.engines(Engines.ALL, liveId, snaps);
+      UI.pnl(live, eng);
+      UI.metrics(live, { savedVol: sim.stats.savedVol, toxicVol: sim.stats.toxicVol,
+                         latency: sim.latency.mmMd + sim.latency.mmOrd, arbLatency: sim.latency.arb },
+                 sim.sig.S.vpin);
+      UI.compare(Engines.ALL, liveId, snaps);
+      const cur = snaps[liveId];
+      UI.session({
+        pnl: session.locked.pnl + (session.base ? cur.pnl.total - session.base.pnl : 0),
+        fills: session.locked.fills + (session.base ? cur.fills - session.base.fills : 0),
+        volume: session.locked.volume + (session.base ? cur.volume - session.base.volume : 0),
+        notional: session.locked.notional + (session.base ? cur.notional - session.base.notional : 0),
+        share: sim.stats.mmMakerVol > 0 ? sim.stats.mmMakerVol / Math.max(sim.stats.benignVol + sim.stats.toxicVol + sim.stats.mmMakerVol, 1e-9) : 0,
+        ms: session.ms, speed, used: session.used, switches: session.switches,
+        viol: Barrier.ledger().violations,
+      });
+      UI.compliance(Barrier.ledger, onPeek);
+      UI.set(UI.$('latMeta'), 'ours ' + (sim.latency.mmMd + sim.latency.mmOrd).toFixed(2) +
+             'ms vs arb ' + sim.latency.arb.toFixed(2) + 'ms', 'sp dim');
+    }
+    if (rt - tChart > 130 && snaps) {
+      tChart = rt;
+      const live = snaps[liveId];
+      Chart.multiLine(UI.$('chEquity'),
+        Engines.ALL.map(e => ({ ring: snaps[e.id].pnlS, color: Chart.C('--' + e.id.toLowerCase()), thick: e.id === liveId })),
+        chartH('chEquity'), { zero: true });
+      Chart.signedArea(UI.$('chInv'), live.invS, chartH('chInv'), Chart.C('--' + liveId.toLowerCase()));
+      Chart.gauge(UI.$('chVpin'), vpinRing, chartH('chVpin'), Engines.byId.E3.p.vpinT);
+      Chart.markout(UI.$('chMarkout'), live.markout, ['0.1s', '0.5s', '1s', '5s', '15s', '30s'], chartH('chMarkout'));
+      UI.set(UI.$('chvEq'), F.sgn(live.pnl.total), 'ch-v ' + UI.sgn(live.pnl.total));
+      UI.set(UI.$('chvInv'), F.qty(live.inv, 3), 'ch-v ' + UI.sgn(live.inv));
+      UI.set(UI.$('chvVpin'), sim.sig.S.vpin.toFixed(3), 'ch-v ' + (sim.sig.S.vpin > 0.35 ? 'dn' : 'up'));
+      const r = live.realizedBps;
+      UI.set(UI.$('chvMk'), r == null ? '—' : F.bps(r), 'ch-v ' + UI.sgn(r));
+    }
+  }
+
+  /* ── dual clock: sim advances in fixed 10 ms steps, render on rAF ────── */
+  let acc = 0, lastRt = 0, vAcc = 0, rafId = 0;
+  function frame(rt) {
+    rafId = requestAnimationFrame(frame);
+    if (!lastRt) { lastRt = rt; return; }
+    const dtRt = Math.min(rt - lastRt, 250); lastRt = rt;
+    acc += dtRt * speed;
+    let n = 0;
+    while (acc >= CFG.SIM_DT && n < 80) { stepSim(CFG.SIM_DT); acc -= CFG.SIM_DT; n++; vAcc += CFG.SIM_DT; }
+    if (vAcc >= 200) { vpinRing.push(sim.sig.S.vpin); vAcc = 0; }
+    render(rt);
+  }
+
+  /* ── controls ────────────────────────────────────────────────────────── */
+  function onPeek() {
+    const list = Barrier.DENIED, ch = list[(Math.random() * list.length) | 0][0];
+    try { Barrier.attemptPeek(ch); }
+    catch (err) {
+      UI.$('peekOut').innerHTML = '<b style="color:var(--dn)">✕ ' + err.name + '</b><br>' + err.message;
+      log('BLOCKED · ' + err.name + ' on "' + ch + '"', 'err');
+    }
+  }
+
+  function buildLatency() {
+    const defs = [
+      { k:'mm',  label:'我方反應延遲 (MD + 下單)', min:0.1, max:50, step:0.1, v:0.8,
+        hint:'從外部 fair 變動到我方撤單抵達撮合引擎的總時間。調到 5ms 以上看 PnL 崩塌。' },
+      { k:'arb', label:'延遲套利者延遲 (ms)', min:0.3, max:12, step:0.1, v:1.6,
+        hint:'對手方速度。我方低於此值才可能在掃單前撤掉報價。' },
+      { k:'fund', label:'資金費率時間壓縮 (demo)', min:1, max:1000, step:1, v:60, unit:'×',
+        hint:'費率用即時真值，但 carry 每秒只累積約 $0.0002 — 短 demo 看不見。此倍率只壓縮「時間」，不改費率。' },
+    ];
+    UI.$('latBox').innerHTML = defs.map(d =>
+      '<div class="prm"><label>' + d.label + '</label><output id="lo_' + d.k + '">' +
+      (d.unit ? d.v + d.unit : d.v.toFixed(2) + ' ms') + '</output>' +
+      '<input type="range" id="li_' + d.k + '" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '" value="' + d.v + '">' +
+      '<span class="hint">' + d.hint + '</span></div>').join('');
+    UI.$('li_mm').addEventListener('input', (e) => {
+      const v = +e.target.value; UI.$('lo_mm').textContent = v.toFixed(2) + ' ms';
+      sim.setLatency(v * 0.45, v * 0.55);
+    });
+    UI.$('li_arb').addEventListener('input', (e) => {
+      const v = +e.target.value; UI.$('lo_arb').textContent = v.toFixed(2) + ' ms';
+      sim.setArbLatency(v);
+    });
+    UI.$('li_fund').addEventListener('input', (e) => {
+      fundMult = +e.target.value; UI.$('lo_fund').textContent = fundMult + '×';
+      UI.setFundLabel(fundMult + '× time');
+    });
+    UI.setFundLabel(fundMult + '× time');
+  }
+
+  /* ── ui scale ────────────────────────────────────────────────────────── */
+  /* CSS pixels are physically smaller on a dense laptop panel than on a large
+     desktop monitor, so a layout authored for the latter reads tiny on the
+     former. Scale up on narrow viewports; never scale down. */
+  function autoScale() {
+    const w = window.innerWidth;
+    return w >= 1700 ? 1 : w >= 1500 ? 1.12 : w >= 1300 ? 1.2 : 1.25;
+  }
+  let scalePref = 'auto';
+  function applyScale(pref) {
+    scalePref = pref === 'auto' || !(+pref > 0) ? 'auto' : String(+pref);
+    const v = scalePref === 'auto' ? autoScale() : +scalePref;
+    document.documentElement.style.setProperty('--ui-scale', v);
+    Chart.setScale(v);
+    UI.$('scaleSel').value = scalePref;
+    tNum = tBook = tChart = 0;
+    try { localStorage.setItem('mmlab.scale', scalePref); } catch (e) {}
+  }
+
+  /* ── theme ───────────────────────────────────────────────────────────── */
+  const THEMES = ['dark', 'vigilio', 'vigilio-dark', 'light'];
+  function applyTheme(t) {
+    if (THEMES.indexOf(t) < 0) t = 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    UI.$('themeSel').value = t;
+    // Chart.C() reads live computed custom properties, so forcing the render
+    // timers stale is enough to repaint every canvas in the new palette.
+    tNum = tBook = tChart = 0;
+    try { localStorage.setItem('mmlab.theme', t); } catch (e) {}
+  }
+
+  function reset() {
+    sim.reset(); feed.reset(); Metrics.Trail.reset(); Barrier.reset(); vpinRing.clear();
+    for (const e of Engines.ALL) led[e.id].reset();
+    buildExecs();
+    session.locked = { pnl:0, fills:0, volume:0, notional:0 };
+    session.ms = 0; session.switches = 0; session.used = [liveId]; session.base = baseOf(liveId);
+    snaps = null; UI.$('eventLog').innerHTML = ''; UI.$('peekOut').innerHTML = '';
+    log('session reset — every accumulated metric cleared', 'warn');
+  }
+
+  /* ── boot ────────────────────────────────────────────────────────────── */
+  for (const e of Engines.ALL) led[e.id] = Metrics.create();
+  buildExecs();
+  session.base = baseOf(liveId);
+
+  sim.onOwnFill((f) => led[liveId].onFill(f, sim.fair));
+  sim.onFastSignal(onFast);
+  sim.onAggression((side, qty, limTicks, t, toxic) => {
+    for (const e of Engines.ALL)
+      if (e.id !== liveId) ex[e.id].onAggression(side, qty, limTicks, t, toxic);
+  });
+
+  UI.params(Engines.byId[liveId], null);
+  buildLatency();
+  UI.compliance(Barrier.ledger, onPeek);
+  UI.$('engineList').addEventListener('click', (e) => {
+    const c = e.target.closest('[data-eng]'); if (c) setLive(c.dataset.eng);
+  });
+  UI.$('speedSeg').addEventListener('click', (e) => {
+    if (e.target.tagName !== 'BUTTON') return;
+    speed = +e.target.dataset.sp;
+    for (const b of e.currentTarget.children) b.classList.toggle('on', b === e.target);
+  });
+  UI.$('resetBtn').addEventListener('click', reset);
+  UI.$('scaleSel').addEventListener('change', (e) => {
+    applyScale(e.target.value);
+    log('ui scale → ' + (scalePref === 'auto' ? 'auto (' + autoScale() + '×)' : scalePref + '×'), 'info');
+  });
+  window.addEventListener('resize', () => { if (scalePref === 'auto') applyScale('auto'); });
+  { let v = 'auto';
+    try { v = localStorage.getItem('mmlab.scale') || 'auto'; } catch (e) {}
+    applyScale(v); }
+  UI.$('themeSel').addEventListener('change', (e) => {
+    applyTheme(e.target.value);
+    log('theme → ' + e.target.value, 'info');
+  });
+  { let t = 'dark';
+    try { t = localStorage.getItem('mmlab.theme') || 'dark'; } catch (e) {}
+    applyTheme(t); }
+
+  log('Market Making Engine Lab boot · engines ' + Engines.ALL.map(x => x.id).join('/') + ' · tick $' + CFG.TICK, 'ok');
+  log('information barrier armed — engines receive Barrier.publish() output only', 'ok');
+  /* ── teardown ────────────────────────────────────────────────────────────
+     `pagehide` covers real unloads and bfcache freezes, which `unload` does
+     not. Without this the exchange sockets and their exponential-backoff
+     reconnect timers can outlive a frozen page. */
+  function teardown() {
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = 0;
+    feed.stop();
+    sim.reset(); Metrics.Trail.reset(); vpinRing.clear();
+    for (const e of Engines.ALL) led[e.id].reset();
+  }
+  window.addEventListener('pagehide', teardown);
+  // A page restored from bfcache has already been torn down; start clean.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
+
+  feed.start();
+  rafId = requestAnimationFrame(frame);
+
+})(Core, U, Feed, Sim, Barrier, Metrics, Exec, Engines, UI, Chart);
+</script>
+</body>
+</html>
