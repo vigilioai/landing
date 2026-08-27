@@ -982,8 +982,19 @@ const Book = ((Core, U) => {
       return o.qty;
     }
 
-    best(side)          { const t = this.tk[side]; return t.length ? this.lv[side].get(t[0]) : null; }
-    qtyAt(side, ticks)  { const L = this.lv[side].get(ticks); return L ? L.qty : 0; }
+    best(side) { const t = this.tk[side]; return t.length ? this.lv[side].get(t[0]) : null; }
+
+    /** Resting size at a price. `exclude` drops one owner's orders, which is how
+     *  a shadow engine sees the book of the world it would actually trade in —
+     *  one where the live engine is not there. */
+    qtyAt(side, ticks, exclude) {
+      const L = this.lv[side].get(ticks);
+      if (!L) return 0;
+      if (!exclude) return L.qty;
+      let q = 0;
+      for (const o of L.orders) if (o.owner !== exclude) q += o.qty;
+      return q;
+    }
 
     /** Volume resting ahead of `id` at its own price — an aggregate figure the
      *  order's owner could equally derive from public depth updates.          */
@@ -995,12 +1006,20 @@ const Book = ((Core, U) => {
       return q;
     }
 
-    /** Top-n aggregated levels. Returns size only — never order identity. */
-    depth(side, n) {
+    /** Top-n aggregated levels. Returns size only — never order identity.
+     *  With `exclude`, a level that exists solely because of that owner is
+     *  skipped entirely and the next real level takes its place. */
+    depth(side, n, exclude) {
       const out = [], t = this.tk[side];
-      for (let i = 0; i < n && i < t.length; i++) {
+      for (let i = 0; i < t.length && out.length < n; i++) {
         const L = this.lv[side].get(t[i]);
-        out.push({ px: L.px, ticks: L.ticks, qty: L.qty, orders: L.orders.length });
+        let qty = L.qty, cnt = L.orders.length;
+        if (exclude) {
+          qty = 0; cnt = 0;
+          for (const o of L.orders) if (o.owner !== exclude) { qty += o.qty; cnt++; }
+          if (qty <= EPS) continue;
+        }
+        out.push({ px: L.px, ticks: L.ticks, qty, orders: cnt });
       }
       return out;
     }
@@ -1102,9 +1121,9 @@ const Barrier = ((Core, U) => {
    * path here can reach it.
    */
   /** Aggregated, de-identified book — the only shape of depth that leaves here. */
-  function marketBook(lob) {
-    const bids = lob.depth(Core.Side.BUY,  CFG.LEVELS);
-    const asks = lob.depth(Core.Side.SELL, CFG.LEVELS);
+  function marketBook(lob, exclude) {
+    const bids = lob.depth(Core.Side.BUY,  CFG.LEVELS, exclude);
+    const asks = lob.depth(Core.Side.SELL, CFG.LEVELS, exclude);
     const bb = bids[0], ba = asks[0];
     return Object.freeze({
       bids: Object.freeze(bids.map(Object.freeze)), asks: Object.freeze(asks.map(Object.freeze)),
@@ -1746,23 +1765,29 @@ const Exec = ((Core, U) => {
     let orders = new Map(), takes = [], seq = 1;
     const alive = (o, t) => t >= o.activeAt && t < o.deadAt && o.qty > EPS;
 
+    /* A shadow is paper trading: it consumes nothing, so its volume is not
+       shared with the live engine — each shadow is its own counterfactual.
+       But in that counterfactual the live engine does not exist, so every read
+       of the book here excludes MM orders. Charging a shadow for a competitor
+       that only exists because it is NOT the one running is the whole error. */
+    const LP = Core.Actor.MM;                    // the owner to look past
     function onAggression(aggSide, qty, limTicks, t, toxic) {
       const passive = sideOf(aggSide), lob = sim.lob;
       const mine = [];
       for (const o of orders.values()) {
         if (o.side !== passive || !alive(o, t)) continue;
-        if (o.qAhead < 0) o.qAhead = lob.qtyAt(o.side, o.ticks);
+        if (o.qAhead < 0) o.qAhead = lob.qtyAt(o.side, o.ticks, LP);
         mine.push(o);
       }
       if (!mine.length) return;
       const prices = new Set(mine.map(o => o.ticks));
-      for (const L of lob.depth(passive, CFG.BOOK_DEPTH)) prices.add(L.ticks);
+      for (const L of lob.depth(passive, CFG.BOOK_DEPTH, LP)) prices.add(L.ticks);
       const arr = [...prices].sort((a, b) => passive === Side.BUY ? b - a : a - b);
       let rem = qty;
       for (const tk of arr) {
         if (rem <= EPS) break;
         if (passive === Side.BUY ? tk < limTicks : tk > limTicks) break;
-        const realQ = lob.qtyAt(passive, tk);
+        const realQ = lob.qtyAt(passive, tk, LP);
         for (const o of mine) {
           if (o.ticks !== tk || rem <= EPS || o.qty <= EPS) continue;
           const ahead = Math.min(o.qAhead, realQ);            // our place in the FIFO queue
@@ -1814,7 +1839,7 @@ const Exec = ((Core, U) => {
         for (const [id, o] of orders) if (now >= o.deadAt || o.qty <= EPS) orders.delete(id);
         while (takes.length && takes[0].t <= now) {
           const tk = takes.shift(); let rem = tk.qty;
-          for (const L of sim.lob.depth(sideOf(tk.side), CFG.BOOK_DEPTH)) {
+          for (const L of sim.lob.depth(sideOf(tk.side), CFG.BOOK_DEPTH, LP)) {
             if (rem <= EPS) break;
             if (tk.side === Side.BUY ? L.ticks > tk.limTicks : L.ticks < tk.limTicks) break;
             const f = Math.min(rem, L.qty); rem -= f;
@@ -2512,6 +2537,8 @@ const UI = ((Core, U) => {
   let fnd = { rate: 0.0001, nextTime: 0, markPx: 0, indexPx: 0, premiumBps: 0 };
 
   const vpinRing = new U.Ring(CFG.SERIES_LEN);
+  // Shadows read signals off the same tape but a book without the live engine.
+  const sigShadow = Signals.create();
   const session = { locked: { pnl:0, fills:0, volume:0, notional:0 }, base: null,
                     ms:0, switches:0, used:[liveId] };
 
@@ -2552,9 +2579,11 @@ const UI = ((Core, U) => {
     const now = sim.t, fair = sim.fair;
     Metrics.Trail.push(now, fair);
     const trades = sim.takeNewTrades();
-    const book = Barrier.marketBook(sim.lob);
+    const book   = Barrier.marketBook(sim.lob);              // as the market sees it
+    const bookLp = Barrier.marketBook(sim.lob, Actor.MM);    // as a shadow would
     const delayed = sim.fairAt(now - sim.latency.mmMd);
-    const S = sim.sig.update(book, trades, delayed, dt);
+    const S   = sim.sig.update(book,   trades, delayed, dt);
+    const Ssh = sigShadow.update(bookLp, trades, delayed, dt);
     const fairView = { micro: delayed, mid: delayed, sigma: sim.sigma, latencyMs: sim.latency.mmMd };
     // Pull fast, replace deliberately: risk-driven cancels ride the 10 ms
     // market-data path, but re-quoting waits 50 ms. Chasing every tick with a
@@ -2563,10 +2592,11 @@ const UI = ((Core, U) => {
     const doQuote = (++qStep % 5) === 0;
 
     for (const e of Engines.ALL) {
-      const X = ex[e.id], L = led[e.id];
+      const X = ex[e.id], L = led[e.id], isLive = e.id === liveId;
       if (X.tick) X.tick(now);
-      const view = Barrier.publish({ t: now, lob: sim.lob, book, tape: sim.tape, fair: fairView,
-                                     funding: fnd, self: X.self(now), signals: S, audit: e.id === liveId });
+      const view = Barrier.publish({ t: now, lob: sim.lob, book: isLive ? book : bookLp,
+                                     tape: sim.tape, fair: fairView, funding: fnd,
+                                     self: X.self(now), signals: isLive ? S : Ssh, audit: isLive });
       if (doQuote) {
         let its = null;
         try { its = e.onTick(view); }
@@ -2581,14 +2611,17 @@ const UI = ((Core, U) => {
 
   /* ── fast path: fair has moved, our market-data latency has elapsed ──── */
   function onFast(t) {
-    const book = Barrier.marketBook(sim.lob);
+    const book   = Barrier.marketBook(sim.lob);
+    const bookLp = Barrier.marketBook(sim.lob, Actor.MM);
     const delayed = sim.fairAt(t - sim.latency.mmMd);
     const fairView = { micro: delayed, mid: delayed, sigma: sim.sigma, latencyMs: sim.latency.mmMd };
     for (const e of Engines.ALL) {
       if (!e.fast) continue;
-      const X = ex[e.id];
-      const view = Barrier.publish({ t, lob: sim.lob, book, tape: sim.tape, fair: fairView,
-                                     funding: fnd, self: X.self(t), signals: sim.sig.S, audit: e.id === liveId });
+      const X = ex[e.id], isLive = e.id === liveId;
+      const view = Barrier.publish({ t, lob: sim.lob, book: isLive ? book : bookLp,
+                                     tape: sim.tape, fair: fairView, funding: fnd,
+                                     self: X.self(t), signals: isLive ? sim.sig.S : sigShadow.S,
+                                     audit: isLive });
       let its = null;
       try { its = e.onFast(view); } catch (err) { log(e.id + ' onFast: ' + err.message, 'err'); }
       if (its && its.length) X.submit(its, t, sim.fair, sim.sigma);
@@ -2731,8 +2764,9 @@ const UI = ((Core, U) => {
 
   /* ── theme ───────────────────────────────────────────────────────────── */
   const THEMES = ['dark', 'vigilio', 'vigilio-dark', 'light'];
+  const DEFAULT_THEME = 'vigilio-dark';
   function applyTheme(t) {
-    if (THEMES.indexOf(t) < 0) t = 'dark';
+    if (THEMES.indexOf(t) < 0) t = DEFAULT_THEME;
     document.documentElement.setAttribute('data-theme', t);
     UI.$('themeSel').value = t;
     // Chart.C() reads live computed custom properties, so forcing the render
@@ -2743,6 +2777,7 @@ const UI = ((Core, U) => {
 
   function reset() {
     sim.reset(); feed.reset(); Metrics.Trail.reset(); Barrier.reset(); vpinRing.clear();
+    sigShadow.reset();
     for (const e of Engines.ALL) led[e.id].reset();
     buildExecs();
     session.locked = { pnl:0, fills:0, volume:0, notional:0 };
@@ -2787,8 +2822,8 @@ const UI = ((Core, U) => {
     applyTheme(e.target.value);
     log('theme → ' + e.target.value, 'info');
   });
-  { let t = 'dark';
-    try { t = localStorage.getItem('mmlab.theme') || 'dark'; } catch (e) {}
+  { let t = DEFAULT_THEME;
+    try { t = localStorage.getItem('mmlab.theme') || DEFAULT_THEME; } catch (e) {}
     applyTheme(t); }
 
   log('Market Making Engine Lab boot · engines ' + Engines.ALL.map(x => x.id).join('/') + ' · tick $' + CFG.TICK, 'ok');
