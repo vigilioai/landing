@@ -92,8 +92,6 @@ body{
   gap:1px; background:var(--line);
 }
 #hdr{grid-column:1/-1}
-#ftr a{color:var(--cyan); text-decoration:none; margin-left:10px}
-#ftr a:hover{text-decoration:underline}
 #ftr{grid-column:1/-1; background:var(--panel); padding:5px 14px;
   font-size:8.5px; letter-spacing:.09em; color:var(--dim); text-align:center}
 .col{background:var(--bg); display:flex; flex-direction:column; gap:1px; min-height:0; overflow:hidden}
@@ -222,13 +220,17 @@ body{
 .eng-m{margin-left:auto; font-size:8px; letter-spacing:.08em; padding:1px 4px; border-radius:2px;
   background:var(--panel3); color:var(--dim); border:1px solid var(--line)}
 .eng.live .eng-m{background:var(--up-bg); color:var(--up); border-color:color-mix(in srgb,var(--up) 27%,transparent)}
-.eng-d{font-size:8.5px; color:var(--dim); margin:2px 0 0 22px; line-height:1.4}
+.eng-d{font-size:8.5px; color:var(--dim); margin:3px 0 0 22px; line-height:1.45}
+.eng-foe{color:var(--txt); font-weight:600}
+.eng.live .eng-foe{color:var(--hi)}
+.eng-full{display:none}
+.eng.live .eng-full{display:inline}
 .eng-s{display:flex; gap:10px; margin:3px 0 0 22px; font-size:9.5px}
 .eng-s b{font-weight:600}
 
 /* ── param sliders ──────────────────────────────────────────────── */
-#paramBox{max-height:26vh}
-#latBox{max-height:20vh}
+#paramBox{max-height:min(136px,20vh); min-height:88px}
+#latBox{max-height:min(104px,15vh); min-height:64px}
 .prm{display:grid; grid-template-columns:1fr auto; gap:2px 6px; align-items:center; margin-bottom:6px}
 .prm label{font-size:9px; color:var(--dim); letter-spacing:.03em}
 .prm output{font-size:9.5px; color:var(--cyan); font-weight:600}
@@ -407,11 +409,11 @@ canvas{display:block; width:100%}
 
   <!-- ══ LEFT RAIL ═══════════════════════════════════════════════ -->
   <div class="col">
-    <div class="pnl">
+    <div class="pnl" style="flex:0 0 auto">
       <div class="pnl-h">Market Making Engine<span class="sp dim">select → LIVE</span></div>
       <div class="pnl-b tight" id="engineList"></div>
     </div>
-    <div class="pnl">
+    <div class="pnl" style="flex:0 0 auto">
       <div class="pnl-h">Engine Parameters</div>
       <div class="pnl-b" id="paramBox"></div>
     </div>
@@ -477,7 +479,7 @@ canvas{display:block; width:100%}
     </div>
   </div>
 
-  <div id="ftr">© 2026 Vigilio. All rights reserved. <a href="manual.html" target="_blank" rel="noopener">維運手冊 ↗</a></div>
+  <div id="ftr">© 2026 Vigilio. All rights reserved.</div>
 </div>
 
 <script>
@@ -1962,7 +1964,8 @@ const Engines = ((Core, U) => {
       hint:'報價與 fair 的緩衝低於此值才撤。E1 不是延遲引擎，設得低 → 反應慢 → 被撿走' },
   ];
   const E1 = { id:'E1', name:'Bid-Ask Spread Capture', sub:'Avellaneda–Stoikov', color:'var(--e1)',
-    desc:'保留價依庫存偏移、最適價差隨波動擴張，以階梯雙邊報價賺取價差。庫存風險完全自負。',
+    foe:'對手：庫存風險',
+    desc:'庫存一多就把報價中心往反方向推，逼自己出貨。不看訊號，庫存自己扛。',
     defs:E1_D, p:mk(E1_D), fast:true,
     onTick(view) {
       const p = this.p, { r, half } = avellaneda(view, p);
@@ -1998,7 +2001,8 @@ const Engines = ((Core, U) => {
     { k:'maxInv',   label:'現貨庫存上限 (BTC)', min:0.1, max:3, step:0.1, v:1.0, fmt:v=>v.toFixed(1) },
   ];
   const E2 = { id:'E2', name:'Arbitrage & Hedging', sub:'Cross-venue delta-neutral', color:'var(--e2)',
-    desc:'本所價格脫錨時主動吃單套利，被動成交後立即到外部場館對沖。庫存風險趨近零，代價是對沖成本吃掉大部分價差。',
+    foe:'對手：對沖成本',
+    desc:'每筆成交立刻外部對沖。報價要蓋過 1.4 bps 對沖成本，否則越做越虧。',
     defs:E2_D, p:mk(E2_D), fast:true,
     onTick(view) {
       const p = this.p, f = view.fair.micro, out = [], desired = [];
@@ -2056,7 +2060,8 @@ const Engines = ((Core, U) => {
     { k:'maxInv',  label:'庫存上限 (BTC)', min:0.1, max:3, step:0.1, v:0.7, fmt:v=>v.toFixed(1) },
   ];
   const E3 = { id:'E3', name:'Microstructure Edge', sub:'Low-latency · VPIN-aware', color:'var(--e3)',
-    desc:'只用公開訊號（OFI／簿口失衡／VPIN／自身排隊位置）偵測毒性流，靠低延遲在掃單抵達前撤單。優勢來自速度與訊號，不是客戶委託。',
+    foe:'對手：逆選擇',
+    desc:'VPIN 判斷有多毒 → 拉寬；OFI 判斷往哪毒 → 偏移；價格一跳搶在掃單前撤。',
     defs:E3_D, p:mk(E3_D), fast:true,
     onTick(view) {
       const p = this.p, S = view.signals, { r, half } = avellaneda(view, p);
@@ -2094,7 +2099,8 @@ const Engines = ((Core, U) => {
     { k:'maxInv',   label:'carry 部位上限 (BTC)', min:0.1, max:5, step:0.1, v:1.5, fmt:v=>v.toFixed(1) },
   ];
   const E4 = { id:'E4', name:'Funding Rate Arbitrage', sub:'Delta-neutral carry', color:'var(--e4)',
-    desc:'用即時資金費率把庫存風險轉成持有收益：偏向累積被支付的那條腿，並以永續空單對沖成 delta≈0，賺 funding 而非方向。',
+    foe:'庫存 → 收益',
+    desc:'偏向累積被付資金費率的那條腿，配永續空單對沖。庫存不是風險，是收益。',
     defs:E4_D, p:mk(E4_D), fast:false,
     onTick(view) {
       const p = this.p, F = view.funding, f = view.fair.micro, out = [], desired = [];
@@ -2327,7 +2333,8 @@ const UI = ((Core, U) => {
           '<div class="eng" data-eng="' + e.id + '">' +
             '<div class="eng-t"><span class="eng-id">' + e.id + '</span><span class="eng-n">' + e.name + '</span>' +
             '<span class="eng-m" id="em_' + e.id + '">SHADOW</span></div>' +
-            '<div class="eng-d">' + e.sub + ' · ' + e.desc + '</div>' +
+            '<div class="eng-d"><span class="eng-foe">' + e.foe + '</span> · ' + e.sub +
+              '<span class="eng-full"><br>' + e.desc + '</span></div>' +
             '<div class="eng-s"><span class="dim">P&L</span><b id="ep_' + e.id + '">—</b>' +
             '<span class="dim">INV</span><b id="ei_' + e.id + '">—</b>' +
             '<span class="dim">FILLS</span><b id="ef_' + e.id + '">—</b></div>' +
