@@ -801,7 +801,7 @@ const Feed = ((Core, U) => {
       const restFresh = venues.some(v => v.src === 'rest' && now - v.ts < restMax);
       const next = wsFresh ? FeedState.LIVE
                  : restFresh ? FeedState.POLLING
-                 : (everLive || now - t0 > 9000) ? FeedState.SIM
+                 : (everLive || now - t0 > 6000) ? FeedState.SIM
                  : FeedState.CONNECTING;
       if (next !== state) {
         const from = state; state = next;
@@ -1333,7 +1333,18 @@ const Sim = ((Core, U, Book, Signals) => {
       sigma = U.clamp(feed.sigma || 6, 0.5, 400);
       const s = dt / 1000;
       let px = simFair;
-      if (feed.micro > 0) px += (feed.micro - simFair) * Math.min(1, s / 0.30);   // track reality
+      if (feed.micro > 0) {
+        const gap = Math.abs(feed.micro - simFair);
+        if (gap > Math.max(simFair * 0.003, 50 * sigma)) {
+          // SIM↔LIVE handover or a reconnect after an outage. Trending across a
+          // gap this size would be a multi-hundred-dollar move that the market
+          // never made, marked straight onto open inventory.
+          px = feed.micro; lpAnchor = feed.micro;
+          log('fair re-anchored, gap $' + gap.toFixed(0) + ' — feed discontinuity, not a market move', 'warn');
+        } else {
+          px += (feed.micro - simFair) * Math.min(1, s / 0.30);
+        }
+      }   // track reality
       px += sigma * Math.sqrt(s) * rnd.normal() * 0.5;
       if (rnd.bool(P.JUMP_RATE * s)) px += (rnd.bool(0.5) ? -1 : 1) * CFG.TICK * rnd.range(P.JUMP_LO, P.JUMP_HI);
       simFair = px;
@@ -2534,7 +2545,7 @@ const UI = ((Core, U) => {
     SIZE_LIMIT : 240 行
     ADR_REFS   : ADR-003 雙時鐘與零配置熱路徑
     ═══════════════════════════════════════════════════════════════════════ */
-  const { Actor, CFG } = Core, F = U.F;
+  const { Actor, CFG, FeedState } = Core, F = U.F;
   const log = (m, c) => UI.log(m, c);
 
   const feed = Feed.create(log);
@@ -2582,6 +2593,11 @@ const UI = ((Core, U) => {
   function stepSim(dt) {
     const f = feed.snapshot();
     fnd = f.funding;
+    // Hold the exchange closed until the feed settles on a price. While the
+    // state is CONNECTING the composite is a placeholder anchored to a
+    // hardcoded seed; starting on it and then chasing the real price marks
+    // whatever inventory exists through a move that never happened.
+    if (f.state === FeedState.CONNECTING || !(f.micro > 0)) return;
     sim.step(dt, f);
     const now = sim.t, fair = sim.fair;
     Metrics.Trail.push(now, fair);
