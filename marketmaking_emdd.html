@@ -400,8 +400,8 @@ canvas{display:block; width:100%}
         <option value="vigilio-dark">Vigilio Dark</option>
         <option value="light">Light</option>
       </select>
-      <div class="seg" id="speedSeg">
-        <button data-sp="1" class="on">1×</button><button data-sp="3">3×</button><button data-sp="10">10×</button>
+      <div class="seg" id="speedSeg" title="Fixed at real time. The fair price is anchored to live venues on the wall clock, and a live feed cannot be fast-forwarded. Accelerating the synthetic order flow while the price cannot keep pace would run fills and price movement on two different clocks: spread capture (per fill) would scale with speed while adverse selection (per price move) would not, inflating every metric. One clock for the whole world.">
+        <button class="on" disabled style="cursor:default">REAL-TIME</button>
       </div>
       <button class="btn danger" id="resetBtn"><span class="lbl-w">RESET SESSION</span><span class="lbl-n">RESET</span></button>
     </div>
@@ -470,7 +470,7 @@ canvas{display:block; width:100%}
       </div>
     </div>
     <div class="pnl" style="flex:0 0 auto">
-      <div class="pnl-h">Engine Comparison<span class="sp dim">same order flow · shadow fills are queue-adjusted estimates, and shadows see the live engine's quotes in the book</span></div>
+      <div class="pnl-h">Engine Comparison<span class="sp dim">same order flow · highlighted = live (real book, exact fills); the rest are shadow estimates whose book excludes the live engine's orders · the estimate error is unsigned, so compare shadow-to-shadow, not shadow-to-live · Sharpe is √T daily-equiv, corrected down for autocorrelation only (short-lag bounce not credited), and illustrative</span></div>
       <div class="pnl-b tight"><table class="cmp" id="cmpTable"></table></div>
     </div>
     <div class="pnl" style="flex:0 0 auto">
@@ -1570,6 +1570,44 @@ const Metrics = ((Core, U) => {
     ═══════════════════════════════════════════════════════════════════════ */
   const { Side, CFG } = Core, T = CFG.MARKOUT_TAUS;
 
+  /** Long-run / one-step variance ratio for √T Sharpe scaling. √T annualisation
+   *  assumes i.i.d. returns; market-making returns are not, because inventory
+   *  persists across intervals. Under positive autocorrelation √T overstates,
+   *  and dividing the variance by this ratio (estimated with a Bartlett /
+   *  Newey-West kernel: γ0 + 2·Σ(1−k/(L+1))·γk over γ0) removes the
+   *  overstatement. The triangular weights keep the estimator positive
+   *  semi-definite. This is Lo (2002), "The Statistics of Sharpe Ratios",
+   *  applied to the scale factor.
+   *
+   *  One caveat drives the caller's one-sided cap. At a 1 s horizon the
+   *  dominant serial structure in a spread-capturing P&L is bid-ask bounce
+   *  (Roll 1984): the half-spread booked on a fill partly reverses the next
+   *  interval through adverse selection and mark-to-market, so lag-1
+   *  autocorrelation is NEGATIVE and this ratio comes out below 1. Lo's
+   *  formula would then scale the Sharpe UP, crediting the book for what is a
+   *  microstructure artifact, not a real variance reduction. So this returns
+   *  the raw ratio (≥ 0 by construction) and the caller caps it at 1: correct
+   *  the overstatement, never reward the bounce. Returns 1 until there are
+   *  enough samples to estimate any lag. */
+  function acVIF(ring) {
+    const n = ring.len;
+    if (n < 30) return 1;                                    // too few samples to trust any lag
+    const m = ring.mean();
+    let g0 = 0;
+    for (let j = 0; j < n; j++) { const d = ring.at(j) - m; g0 += d * d; }
+    g0 /= n;
+    if (!(g0 > 1e-18)) return 1;                             // flat series, nothing to correct
+    const L = Math.max(4, Math.min(40, Math.round(Math.cbrt(n))));  // Andrews n^(1/3) bandwidth
+    let vif = 1;
+    for (let k = 1; k <= L; k++) {
+      let gk = 0;
+      for (let j = k; j < n; j++) gk += (ring.at(j) - m) * (ring.at(j - k) - m);
+      gk /= n;
+      vif += 2 * (1 - k / (L + 1)) * (gk / g0);
+    }
+    return Math.max(vif, 0);   // raw ratio; Bartlett kernel keeps it >= 0. One-sided cap is applied by the caller.
+  }
+
   /** Shared 90 s fair-price trail — markout at τ = 30 s needs history the
    *  simulator's 1.3 s micro-ring cannot hold. */
   const Trail = (() => {
@@ -1671,6 +1709,8 @@ const Metrics = ((Core, U) => {
       const eff = s.effVol > 0 ? s.effSum / s.effVol : 0;
       const far = mk[4] != null ? mk[4] : mk[3];                      // τ = 15 s, else 5 s
       const mu = s.ret.mean(), sd = s.ret.std();
+      const vif = acVIF(s.ret);          // raw long-run/one-step variance ratio (may be < 1 under bounce)
+      const vifEff = Math.max(vif, 1);   // one-sided: correct overstatement only, never credit negative autocorr
       const secs = Math.max(s.totalMs / 1000, 1);
       return {
         pnl: { spread:s.spread, fees:s.feesPnl, inventory:m - s.spread - s.feesPnl,
@@ -1693,13 +1733,28 @@ const Metrics = ((Core, U) => {
         funding:s.funding,
         fundingApr: Math.abs(s.hedgeInv) > 1e-6 && s.totalMs > 4000
           ? s.funding / (Math.abs(s.hedgeInv) * fair) * (31.536e9 / s.totalMs) : 0,
-        sharpe: sd > 1e-9 && s.ret.len >= 20 ? U.clamp(mu / sd * Math.sqrt(86400), -999, 999) : 0,
+        sharpe: sd > 1e-9 && s.ret.len >= 20
+          ? U.clamp(mu / sd * Math.sqrt(86400 / vifEff), -999, 999) : 0,
+        vif: s.ret.len >= 30 ? vif : null,   // raw ratio for display; null while under-sampled
         maxDD:s.maxDD, liveMs:s.liveMs, totalMs:s.totalMs,
         pnlS:s.pnlS, invS:s.invS,
       };
     }
 
     return { s, onFill, hedge, accrueFunding, mark, snapshot,
+             /** Re-baseline P&L accounting to the current fair after a gap the
+              *  sim did not step through (e.g. a backgrounded tab). Without this
+              *  the first mark after the gap pushes one 1 s "return" that is
+              *  really a multi-minute revaluation of open inventory, poisoning
+              *  variance, Sharpe and drawdown; and markouts opened before the
+              *  gap would resolve against a fair that teleported. We drop those
+              *  pending markouts and reset the equity peak so the gap creates
+              *  neither a phantom return nor a phantom drawdown. */
+             rebase(fair) {
+               const tot = total(fair);
+               s.lastTotal = tot; s.peak = tot;
+               s.secAcc = 0; s.sampAcc = 0; s.pending.length = 0;
+             },
              countOrder(n) { s.ordersSent += n; }, countCancel(n) { s.cancels += n; },
              reset() {
                for (const k of ['inv','cash','hedgeInv','hedgeCash','funding','hedgeCost','hedgeVol',
@@ -1803,8 +1858,20 @@ const Exec = ((Core, U) => {
         const realQ = lob.qtyAt(passive, tk, LP);
         for (const o of mine) {
           if (o.ticks !== tk || rem <= EPS || o.qty <= EPS) continue;
-          const ahead = Math.min(o.qAhead, realQ);            // our place in the FIFO queue
-          const f = Math.min(Math.max(0, rem - ahead), o.qty);
+          // Trade-driven FIFO. qAhead is reduced ONLY by the part of this
+          // aggression that trades through the orders ahead of us, and only
+          // ever downward, never recomputed from current depth. Two
+          // defects die with that one change. (a) New arrivals join the BACK
+          // of the queue, so a level refilling after it was eaten can no
+          // longer push us backwards (the old min(qAhead,realQ) did). (b) A
+          // cancellation is not an aggression event and never reaches this
+          // path, so cancels (which empirically concentrate at the back)
+          // cannot hand us free progress. Both are the pessimistic, and
+          // empirically closer, assumption.
+          const tradedAhead = Math.min(rem, o.qAhead);
+          o.qAhead -= tradedAhead;                             // monotone, trade-only
+          const reach = rem - tradedAhead;                     // aggressor volume reaching us
+          const f = Math.min(reach, o.qty);
           if (f > EPS) {
             o.qty -= f; rem -= f;
             led.onFill({ t, px: tk * CFG.TICK, qty: f, side: o.side, role:'MAKER', toxic }, sim.fair);
@@ -2450,7 +2517,8 @@ const UI = ((Core, U) => {
           Math.abs(snap.hedgeInv) > 1e-6 ? 'perp ' + F.qty(snap.hedgeInv, 3) : 'unhedged');
       put(g, 'var', F.usd(snap.invVaR, 0), snap.invVaR > 400 ? 'dn' : '', '95% · 60s horizon');
       put(g, 'peak', F.qty(snap.invPeak, 3), '', 'TWA ' + F.qty(snap.invTwa, 3));
-      put(g, 'sharpe', snap.sharpe ? snap.sharpe.toFixed(1) : '—', UI.sgn(snap.sharpe), 'daily-equiv, 1s P&L');
+      put(g, 'sharpe', snap.sharpe ? snap.sharpe.toFixed(1) : '—', UI.sgn(snap.sharpe),
+          snap.vif != null ? 'daily-equiv · VIF ' + snap.vif.toFixed(2) + (snap.vif < 1 ? ' (capped)' : '') : 'daily-equiv');
       put(g, 'dd', F.usd(snap.maxDD), snap.maxDD > 0 ? 'dn' : '', 'peak to trough');
       put(g, 'vpin', vpin.toFixed(3), vpin > 0.35 ? 'dn' : 'up', 'bulk volume classified');
       put(g, 'toxic', F.pct(snap.toxicPct), snap.toxicPct > 0.3 ? 'dn' : '', F.int(snap.toxicFills) + ' toxic fills');
@@ -2467,7 +2535,7 @@ const UI = ((Core, U) => {
         const s = snaps[e.id];
         return '<tr class="' + (e.id === liveId ? 'live' : '') + '"><td><span style="color:' + e.color +
           '">■</span> ' + e.id + ' ' + e.name + '</td>' +
-          '<td class="' + (e.id === liveId ? 'up' : 'dim') + '">' + (e.id === liveId ? 'LIVE' : 'SHADOW') + '</td>' +
+          '<td class="' + (e.id === liveId ? 'up' : 'dim') + '">' + (e.id === liveId ? 'LIVE · exact' : 'SHADOW · est.') + '</td>' +
           '<td class="' + sgn(s.pnl.total) + '">' + F.sgn(s.pnl.total) + '</td>' +
           '<td class="' + sgn(s.pnl.spread) + '">' + F.sgn(s.pnl.spread) + '</td>' +
           '<td class="' + sgn(s.pnl.inventory) + '">' + F.sgn(s.pnl.inventory) + '</td>' +
@@ -2489,7 +2557,7 @@ const UI = ((Core, U) => {
       put('sessionGrid', 'pnl', F.sgn(s.pnl), sgn(s.pnl), 'realised while LIVE');
       put('sessionGrid', 'fills', F.int(s.fills), '', F.usd(s.notional, 0));
       put('sessionGrid', 'vol', F.qty(s.volume, 3) + ' BTC', '', 'share ' + F.pct(s.share, 1) + ' of tape');
-      put('sessionGrid', 'time', F.clock(s.ms), '', 'speed ' + s.speed + 'x');
+      put('sessionGrid', 'time', F.clock(s.ms), '', 'real-time');
       put('sessionGrid', 'engines', s.used.join(' → ') || '—', '', s.switches + ' switches');
       put('sessionGrid', 'viol', String(s.viol), s.viol ? 'dn' : 'up', s.viol ? 'blocked & logged' : 'barrier clean');
     },
@@ -2827,11 +2895,10 @@ const UI = ((Core, U) => {
   UI.$('engineList').addEventListener('click', (e) => {
     const c = e.target.closest('[data-eng]'); if (c) setLive(c.dataset.eng);
   });
-  UI.$('speedSeg').addEventListener('click', (e) => {
-    if (e.target.tagName !== 'BUTTON') return;
-    speed = +e.target.dataset.sp;
-    for (const b of e.currentTarget.children) b.classList.toggle('on', b === e.target);
-  });
+  // Speed is fixed at real time (1x). The control is display-only: the fair
+  // price is anchored to live venues on the wall clock, so there is no honest
+  // way to run the synthetic flow faster than the price can move. See the note
+  // on the REAL-TIME indicator.
   UI.$('resetBtn').addEventListener('click', reset);
   UI.$('scaleSel').addEventListener('change', (e) => {
     applyScale(e.target.value);
@@ -2865,6 +2932,22 @@ const UI = ((Core, U) => {
   window.addEventListener('pagehide', teardown);
   // A page restored from bfcache has already been torn down; start clean.
   window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
+
+  // Background tabs halt requestAnimationFrame, so the sim freezes while the
+  // live fair price keeps moving. On return we throw away the wall time that
+  // elapsed (lastRt/acc reset, so we do not try to replay it as sim time) and
+  // re-baseline every ledger to the current fair, so the discontinuous
+  // mark-to-market on open inventory is never injected into the 1 s P&L series.
+  // The shared fair trail is cleared for the same reason: markouts must not
+  // straddle the gap.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    lastRt = 0; acc = 0; vAcc = 0;
+    Metrics.Trail.reset();
+    const fair = sim.fair || 1;
+    for (const e of Engines.ALL) led[e.id].rebase(fair);
+    log('resumed from a hidden tab, metrics re-baselined across the gap', 'warn');
+  });
 
   feed.start();
   rafId = requestAnimationFrame(frame);
