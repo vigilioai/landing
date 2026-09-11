@@ -231,6 +231,7 @@ body{
 /* ── param sliders ──────────────────────────────────────────────── */
 #paramBox{max-height:min(136px,20vh); min-height:88px}
 #latBox{max-height:min(104px,15vh); min-height:64px}
+#mktBox{max-height:min(92px,13vh); min-height:56px}
 .prm{display:grid; grid-template-columns:1fr auto; gap:2px 6px; align-items:center; margin-bottom:6px}
 .prm label{font-size:9px; color:var(--dim); letter-spacing:.03em}
 .prm output{font-size:9.5px; color:var(--cyan); font-weight:600}
@@ -421,6 +422,10 @@ canvas{display:block; width:100%}
       <div class="pnl-h">Execution Latency &amp; Race<span class="sp dim" id="latMeta">—</span></div>
       <div class="pnl-b" id="latBox"></div>
     </div>
+    <div class="pnl" style="flex:0 0 auto">
+      <div class="pnl-h">Market Realism<span class="sp dim">adverse-selection source</span></div>
+      <div class="pnl-b" id="mktBox"></div>
+    </div>
     <div class="pnl grow">
       <div class="pnl-h">Information Barrier<span class="sp" id="barrierState" style="color:var(--up)">● ENFORCED</span></div>
       <div class="pnl-b" id="complianceBox"></div>
@@ -540,6 +545,29 @@ const Core = (() => {
   return Object.freeze({ Side, Intent, FeedState, Actor, Mode, CFG,
     DomainError, FrontRunViolationError, FeedStaleError, RiskLimitBreachError });
 })();
+
+/* ── market-realism knobs (mutable; wired to the Market Realism sliders) ─────
+   Adverse selection is created HERE and nowhere else. A fraction of the
+   aggressive flow is INFORMED and carries a permanent price impact in its own
+   direction, so a passive fill is, on average, followed by a move against the
+   position it opened. That is the single most important thing a real market
+   punishes a maker for, and the flow model otherwise omits it.
+     informed  : P(a retail aggression is informed) ∈ [0,1]
+     lambda    : square-root impact strength (Almgren/Bouchaud): the efficient
+                 price moves by lambda*sqrt(qty) bps, hard-capped so a fat-tail
+                 sweep cannot spike it (Kyle's λ, tail-safe)
+     impactTau : seconds over which that impact decays back to the real-feed
+                 anchor. Chosen ≫ the 30 s markout window, so the impact is
+                 permanent where the maker measures it but the price stays
+                 tethered to real BTC over minutes.
+   Ships OFF by default (informed = 0): the demo opens in the stable, well-
+   understood regime, byte-for-byte the old behaviour. Raise the Market Realism
+   knobs to switch adverse selection on. NOT calibrated to real BTC: raise
+   informed GRADUALLY (0.1, 0.2, ...) and watch the ADVERSE SELECTION cell,
+   because a high informed fraction drives a strong one-sided trend that pins an
+   UNHEDGED maker at max inventory and swings its MTM hard (that is the adverse
+   selection biting, not a spike).                                            */
+const MKT = { informed: 0.00, lambda: 5.0, impactTau: 120 };
 
 
 /* ╔══════════════════════════════════════════════════════════════════════╗
@@ -1312,7 +1340,7 @@ const Sim = ((Core, U, Book, Signals) => {
     const acc = { lp: 0, retail: 0 };
     const fT = new Float64Array(128), fP = new Float64Array(128);
     let fI = 0, fN = 0;
-    let t = 0, simFair = 0, lpAnchor = 0, sigma = 6, seeded = false;
+    let t = 0, simFair = 0, lpAnchor = 0, sigma = 6, seeded = false, impactAccum = 0;
     let onOwnFill = null, onFast = null, onAgg = null;
     const arbFlight = { BUY:false, SELL:false }, arbCool = { BUY:0, SELL:0 };
     const st = { toxicVol:0, savedVol:0, benignVol:0, arbEvents:0, trades:0,
@@ -1328,25 +1356,44 @@ const Sim = ((Core, U, Book, Signals) => {
     }
     const halfTicks = () => U.clamp(Math.round(4 + sigma * 1.1), 3, 400);   // ambient ≈ 2.8 bps @ σ$6
 
+    /** Permanent price impact of an informed aggression (Kyle's λ). Informed
+     *  flow moves the efficient price in its own direction by MKT.lambda bps
+     *  per BTC; the passive maker who filled the other side is now holding a
+     *  position the price has just moved against. This is added to a persistent
+     *  component that advanceFair() decays back to the real-feed anchor over
+     *  MKT.impactTau, so it is permanent within the markout window and tethered
+     *  over minutes. This one function is the entire adverse-selection channel. */
+    function priceImpact(side, qty) {
+      // Square-root impact law (Almgren, Bouchaud): the price moves with the
+      // SQUARE ROOT of size, not linearly, so a rare fat-tail retail sweep
+      // cannot slam it. The accumulated deviation from the real-feed anchor is
+      // hard-capped, which also defuses the momentum-vs-impact feedback loop:
+      // a runaway can never push past the cap.
+      const cap = 0.003 * simFair;
+      impactAccum += (side === Side.BUY ? 1 : -1) * (MKT.lambda / 1e4) * simFair * Math.sqrt(qty);
+      impactAccum = U.clamp(impactAccum, -cap, cap);
+    }
+
     function advanceFair(dt, feed) {
       if (!seeded) { simFair = feed.micro > 0 ? feed.micro : 79500; lpAnchor = simFair; seeded = true; seedBook(); }
       sigma = U.clamp(feed.sigma || 6, 0.5, 400);
       const s = dt / 1000;
       let px = simFair;
       if (feed.micro > 0) {
-        const gap = Math.abs(feed.micro - simFair);
+        const gap = Math.abs(feed.micro - (simFair - impactAccum));   // measure feed tracking error, not our own impact
         if (gap > Math.max(simFair * 0.003, 50 * sigma)) {
           // SIM↔LIVE handover or a reconnect after an outage. Trending across a
           // gap this size would be a multi-hundred-dollar move that the market
           // never made, marked straight onto open inventory.
-          px = feed.micro; lpAnchor = feed.micro;
+          px = feed.micro; lpAnchor = feed.micro; impactAccum = 0;
           log('fair re-anchored, gap $' + gap.toFixed(0) + ' — feed discontinuity, not a market move', 'warn');
         } else {
-          px += (feed.micro - simFair) * Math.min(1, s / 0.30);
+          px += (feed.micro + impactAccum - simFair) * Math.min(1, s / 0.30);
         }
       }   // track reality
       px += sigma * Math.sqrt(s) * rnd.normal() * 0.5;
       if (rnd.bool(P.JUMP_RATE * s)) px += (rnd.bool(0.5) ? -1 : 1) * CFG.TICK * rnd.range(P.JUMP_LO, P.JUMP_HI);
+      impactAccum *= Math.exp(-s / MKT.impactTau);   // informed impact fades back to the real-feed anchor over minutes
       simFair = px;
       lpAnchor += (simFair - lpAnchor) * Math.min(1, s / (P.LP_LAG_MS / 1000));   // LPs trail — the stale-quote source
     }
@@ -1472,10 +1519,16 @@ const Sim = ((Core, U, Book, Signals) => {
           break;
         }
         case 'RETAIL': {
-          if (onAgg) onAgg(e.side, e.qty, e.limTicks, e.t, false);
+          // A fraction of retail carries information. The fill is booked first,
+          // at the pre-impact fair (so the effective spread is unchanged), then
+          // the efficient price moves — the maker's adverse selection shows up
+          // only in the forward markout, exactly as in reality.
+          const informed = MKT.informed > 0 && rnd.bool(MKT.informed);
+          if (onAgg) onAgg(e.side, e.qty, e.limTicks, e.t, informed);
           fills.length = 0;
           lob.match(e.side, e.qty, e.limTicks, e.t, fills);
-          record(fills, e.side, false, false);
+          record(fills, e.side, informed, false);
+          if (informed) priceImpact(e.side, e.qty);
           break;
         }
         case 'MM_ORDER': {
@@ -1545,7 +1598,7 @@ const Sim = ((Core, U, Book, Signals) => {
       reset() {
         lob.reset(); evq.clear(); sig.reset(); rnd.reseed(0xBEEFCAFE);
         tape.length = 0; newTrades.length = 0; mmIds.clear();
-        t = 0; seeded = false; fI = 0; fN = 0;
+        t = 0; seeded = false; fI = 0; fN = 0; impactAccum = 0;
         acc.lp = acc.retail = 0; arbFlight.BUY = arbFlight.SELL = false; arbCool.BUY = arbCool.SELL = 0;
         for (const k in st) st[k] = 0;
       },
@@ -2834,6 +2887,27 @@ const UI = ((Core, U) => {
     UI.setFundLabel(fundMult + '× time');
   }
 
+  function buildMarket() {
+    const fmtPi = v => Math.round(v * 100) + '%';
+    const fmtLam = v => 'λ ' + v.toFixed(1);
+    const defs = [
+      { k:'informed', label:'知情流比例 π', min:0, max:0.9, step:0.05, v:MKT.informed, fmt:fmtPi,
+        hint:'主動流中「有資訊」的比例。這些單帶永久價格衝擊，是逆選擇的唯一來源。調到 0 = 回到沒有逆選擇的舊世界。' },
+      { k:'lambda', label:'價格衝擊 λ（平方根律）', min:0, max:20, step:0.5, v:MKT.lambda, fmt:fmtLam,
+        hint:'知情單對效率價的衝擊強度，價格移動 λ×√數量 bp，有上限所以不會被大單打爆。越大逆選擇越重、你越該拉寬。盯著 ADVERSE SELECTION 這格調到轉正為止。' },
+    ];
+    UI.$('mktBox').innerHTML = defs.map(d =>
+      '<div class="prm"><label>' + d.label + '</label><output id="mo_' + d.k + '">' + d.fmt(d.v) + '</output>' +
+      '<input type="range" id="mi_' + d.k + '" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '" value="' + d.v + '">' +
+      '<span class="hint">' + d.hint + '</span></div>').join('');
+    UI.$('mi_informed').addEventListener('input', (e) => {
+      MKT.informed = +e.target.value; UI.$('mo_informed').textContent = fmtPi(MKT.informed);
+    });
+    UI.$('mi_lambda').addEventListener('input', (e) => {
+      MKT.lambda = +e.target.value; UI.$('mo_lambda').textContent = fmtLam(MKT.lambda);
+    });
+  }
+
   /* ── ui scale ────────────────────────────────────────────────────────── */
   /* CSS pixels are physically smaller on a dense laptop panel than on a large
      desktop monitor, so a layout authored for the latter reads tiny on the
@@ -2891,6 +2965,9 @@ const UI = ((Core, U) => {
 
   UI.params(Engines.byId[liveId], null);
   buildLatency();
+  // The fix lives in MKT's defaults, so the sim is corrected even if this panel
+  // fails to build; the sliders only let you tune it.
+  try { buildMarket(); } catch (err) { console.warn('market panel init failed', err); }
   UI.compliance(Barrier.ledger, onPeek);
   UI.$('engineList').addEventListener('click', (e) => {
     const c = e.target.closest('[data-eng]'); if (c) setLive(c.dataset.eng);
@@ -2953,14 +3030,6 @@ const UI = ((Core, U) => {
   rafId = requestAnimationFrame(frame);
 
 })(Core, U, Feed, Sim, Barrier, Metrics, Exec, Engines, UI, Chart);
-</script>
-<!-- Analytics -->
-<script>
-!function(t,e){var o,n,p,r;e.__SV||(window.posthog&&window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init capture register register_once unregister identify reset people.set".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
-posthog.init('phc_yzuwWnDjV5AbyXRFJ8hBc9qegmyjyxfY9E95RhwkqHxn',{api_host:'https://us.i.posthog.com',defaults:'2026-01-30',person_profiles:'identified_only'});
-</script>
-<script>
-(function(){var t='4dcae2d3ac02f7';fetch('https://ipinfo.io/json?token='+t).then(r=>r.json()).then(d=>{if(window.posthog){posthog.register({ip_city:d.city,ip_region:d.region,ip_country:d.country,ip_isp:d.org});posthog.setPersonProperties&&posthog.setPersonProperties({ip_city:d.city,ip_isp:d.org});}}).catch(()=>{});})();
 </script>
 </body>
 </html>
